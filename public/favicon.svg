@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Monogramme ec">
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="#F7F5EF" stroke="#E8DDC8" stroke-width="2" />
+  <text
+    x="18"
+    y="44"
+    fill="#1F2937"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="38"
+    font-weight="700"
+  >
+    e
+  </text>
+  <text
+    x="32"
+    y="40"
+    fill="#4B4C9D"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="30"
+    font-weight="700"
+  >
+    c
+  </text>
+  <circle cx="49" cy="17" r="2.5" fill="#4B4C9D" />
+</svg>
