@@ -14,7 +14,8 @@ Prérequis : Node.js 20+.
 
 ## Réservations
 
-La réservation fonctionne actuellement via un email prérempli envoyé à `contact@aidhabitat.fr`.
+La réservation est envoyée directement depuis le formulaire via la fonction Vercel `/api/reservation`.
+Les emails sont transmis à `contact@aidhabitat.fr` depuis l'adresse d'envoi configurée côté serveur.
 Le paiement Stripe pour les salles de réunion et les événements sera branché dans une itération suivante.
 
 ## Pages légales

@@ -1,9 +1,9 @@
 export const siteConfig = {
   brand: "L'esquisse commune",
-  siteUrl: 'https://aidhabitat.fr',
+  siteUrl: 'https://esquisse.aidhabitat.fr',
   email: 'contact@aidhabitat.fr',
-  phoneDisplay: '09 53 98 40 35',
-  phoneLink: '0953984035',
+  phoneDisplay: '06 37 94 64 10',
+  phoneLink: '0637946410',
   address: {
     street: '16 rue Léo Lagrange',
     postalCode: '35131',
@@ -12,7 +12,7 @@ export const siteConfig = {
   seo: {
     targetKeyword: 'location de bureaux à Rennes',
     defaultTitle: 'Location de bureaux à Rennes | Bureaux à louer près de Rennes',
-    defaultDescription: "Vous recherchez une location de bureaux à Rennes ? Découvrez des bureaux privés à louer près de Rennes, à Chartres-de-Bretagne, à 15 minutes de la métropole.",
+    defaultDescription: "Vous recherchez une location de bureaux à Rennes ? Découvrez des bureaux privés à louer près de Rennes, à Chartres-de-Bretagne, à 10 minutes de la métropole.",
   },
   legal: {
     publisherName: "Aid'Habitat",

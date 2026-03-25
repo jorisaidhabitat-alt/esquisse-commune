@@ -1,5 +1,5 @@
 import {Mail, Menu, Phone, X} from 'lucide-react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {siteConfig} from '../data/site';
 
 const navLinks = [
@@ -11,6 +11,20 @@ const navLinks = [
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = previousOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
@@ -53,30 +67,44 @@ export function SiteHeader() {
         </button>
       </div>
 
-      {isOpen && (
-        <div id="mobile-navigation" className="border-t border-gray-100 bg-white md:hidden">
-          <nav className="mx-auto flex max-w-[1400px] flex-col gap-2 px-6 py-4">
+      <div
+        id="mobile-navigation"
+        className={`fixed inset-x-0 bottom-0 top-[84px] z-40 bg-white transition-opacity duration-300 md:hidden ${
+          isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <nav className="flex h-full flex-col px-6 py-8">
+          <div className="flex flex-1 flex-col justify-center gap-3">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="rounded-2xl px-4 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 hover:text-primary"
+                className="rounded-2xl px-4 py-4 text-center text-base font-semibold text-gray-900 transition-colors hover:bg-gray-50 hover:text-primary"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
               </a>
             ))}
-            <a href={`mailto:${siteConfig.email}`} className="mt-2 flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <a
+              href={`mailto:${siteConfig.email}`}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-primary px-4 py-4 text-center text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+            >
               <Mail size={16} />
               {siteConfig.email}
             </a>
-            <a href={`tel:${siteConfig.phoneLink}`} className="flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700">
+            <a
+              href={`tel:${siteConfig.phoneLink}`}
+              className="flex items-center justify-center gap-3 rounded-2xl bg-primary px-4 py-4 text-center text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+            >
               <Phone size={16} />
               {siteConfig.phoneDisplay}
             </a>
-          </nav>
-        </div>
-      )}
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }

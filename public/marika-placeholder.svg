@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Portrait placeholder Marika">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7f5ef" />
+      <stop offset="100%" stop-color="#ece6d8" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="320" rx="96" fill="url(#bg)" />
+  <circle cx="160" cy="122" r="54" fill="#d6c9b0" />
+  <path d="M101 262c8-46 40-74 59-74s51 28 59 74" fill="#4b4c9d" />
+  <path d="M111 126c2-42 28-69 49-69 30 0 49 20 53 56-10-10-22-13-35-13-19 0-41 7-67 26z" fill="#1f2937" />
+  <text
+    x="160"
+    y="286"
+    text-anchor="middle"
+    fill="#1f2937"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="28"
+    font-weight="700"
+  >
+    M
+  </text>
+</svg>

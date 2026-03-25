@@ -4,9 +4,9 @@ import {siteConfig} from '../data/site';
 
 export function SiteFooter() {
   return (
-    <footer className="bg-gray-900 pb-10 pt-20 text-white">
+    <footer className="bg-gray-900 pb-8 pt-16 text-white md:pb-10 md:pt-20">
       <div className="mx-auto max-w-[1400px] px-6 md:px-12">
-        <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-4">
+        <div className="mb-12 grid grid-cols-1 gap-10 text-center md:mb-16 md:grid-cols-4 md:gap-12 md:text-left">
           <div>
             <div className="mb-6">
               <span className="font-serif text-2xl font-black tracking-tight">{siteConfig.brand}</span>
@@ -37,8 +37,8 @@ export function SiteFooter() {
 
           <div>
             <h4 className="mb-6 font-bold text-gray-200">Nous trouver</h4>
-            <p className="mb-4 flex items-start gap-3 text-sm text-gray-400">
-              <MapPin size={18} className="shrink-0 text-primary" />
+            <p className="mb-4 flex items-start justify-center gap-3 text-sm text-gray-400 md:justify-start">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-primary" />
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${siteConfig.address.street}, ${siteConfig.address.postalCode} ${siteConfig.address.city}, France`)}`}
                 target="_blank"
@@ -50,11 +50,11 @@ export function SiteFooter() {
                 France
               </a>
             </p>
-            <p className="mb-4 flex items-center gap-3 text-sm text-gray-400">
+            <p className="mb-4 flex items-center justify-center gap-3 text-sm text-gray-400 md:justify-start">
               <Mail size={18} className="shrink-0 text-primary" />
               <a href={`mailto:${siteConfig.email}`} className="break-all transition-colors hover:text-white sm:break-normal">{siteConfig.email}</a>
             </p>
-            <p className="flex items-center gap-3 text-sm text-gray-400">
+            <p className="flex items-center justify-center gap-3 text-sm text-gray-400 md:justify-start">
               <Phone size={18} className="shrink-0 text-primary" />
               <a href={`tel:${siteConfig.phoneLink}`} className="transition-colors hover:text-white">{siteConfig.phoneDisplay}</a>
             </p>

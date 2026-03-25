@@ -55,23 +55,23 @@ export function GalleryModal({
           aria-modal="true"
           aria-labelledby="gallery-title"
         >
-          <div className="relative min-h-screen p-5 md:p-12">
+          <div className="relative min-h-screen p-4 sm:p-5 md:p-12">
             <button
               type="button"
               onClick={onClose}
-              className="fixed right-4 top-4 z-[110] flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200 md:right-8 md:top-8 md:h-14 md:w-14"
+              className="fixed right-3 top-3 z-[110] flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 transition-colors hover:bg-gray-200 sm:right-4 sm:top-4 sm:h-12 sm:w-12 md:right-8 md:top-8 md:h-14 md:w-14"
               aria-label="Fermer la galerie"
             >
               <X size={24} className="text-gray-900" />
             </button>
 
-            <div className="mx-auto max-w-[1400px] pt-10 md:pt-12">
+            <div className="mx-auto max-w-[1400px] pt-8 sm:pt-10 md:pt-12">
               <motion.h2
                 id="gallery-title"
                 initial={{y: 20, opacity: 0}}
                 animate={{y: 0, opacity: 1}}
                 transition={{delay: 0.2}}
-                className="mb-8 font-serif text-4xl font-black text-gray-900 sm:text-5xl md:text-7xl"
+                className="mb-6 font-serif text-3xl font-black text-gray-900 sm:mb-8 sm:text-5xl md:text-7xl"
               >
                 {gallery.title}
               </motion.h2>
@@ -80,7 +80,7 @@ export function GalleryModal({
                 initial={{y: 20, opacity: 0}}
                 animate={{y: 0, opacity: 1}}
                 transition={{delay: 0.3}}
-                className="mb-16 flex flex-wrap gap-3"
+                className="mb-12 flex flex-wrap gap-3 md:mb-16"
               >
                 {gallery.services.map((service) => (
                   <span key={service} className="rounded-full bg-primary/10 px-4 py-2 text-sm font-bold text-primary">
@@ -89,7 +89,7 @@ export function GalleryModal({
                 ))}
               </motion.div>
 
-              <div className="grid grid-cols-1 gap-8 pb-20 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 pb-16 sm:gap-8 sm:pb-20 md:grid-cols-2 lg:grid-cols-3">
                 {gallery.images.map((image, index) => (
                   <motion.div
                     key={image}

@@ -1,6 +1,6 @@
 export const galleryData = {
   cuisine: {
-    title: 'La Cuisine',
+    title: 'La cafet’',
     summary: 'Entièrement équipée pour vos pauses déjeuner.',
     services: [
       'Four à chaleur tournante',
@@ -20,8 +20,8 @@ export const galleryData = {
     ],
   },
   pause: {
-    title: 'Salle de pause',
-    summary: 'Canapés confortables et ambiance détendue.',
+    title: 'Pause café',
+    summary: 'Un espace détente pensé pour le partage.',
     services: ['Canapés modulables', 'Baby-foot', 'Bibliothèque partagée', 'Plantes purifiantes', 'Lumière tamisée'],
     images: [
       'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=1200',
@@ -33,8 +33,8 @@ export const galleryData = {
     ],
   },
   call: {
-    title: 'Call rooms',
-    summary: 'Cabines insonorisées pour vos appels importants.',
+    title: 'Phone box',
+    summary: 'Box privés équipés pour vos visios et vos appels confidentiels.',
     services: ['Insonorisation acoustique', 'Éclairage ring-light', 'Prises RJ45', 'Tablette écritoire', 'Ventilation silencieuse'],
     images: [
       'https://images.unsplash.com/photo-1598257006458-087169a1f08d?auto=format&fit=crop&q=80&w=1200',
