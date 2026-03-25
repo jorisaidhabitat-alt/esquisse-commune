@@ -69,11 +69,11 @@ export function SiteHeader() {
 
       <div
         id="mobile-navigation"
-        className={`fixed inset-x-0 bottom-0 top-[84px] z-40 bg-white transition-opacity duration-300 md:hidden ${
-          isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        className={`fixed inset-0 z-40 bg-white transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform md:hidden ${
+          isOpen ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none -translate-y-6 opacity-0'
         }`}
       >
-        <nav className="flex h-full flex-col px-6 py-8">
+        <nav className="flex h-full flex-col px-6 pb-8 pt-28">
           <div className="flex flex-1 flex-col justify-center gap-3">
             {navLinks.map((link) => (
               <a

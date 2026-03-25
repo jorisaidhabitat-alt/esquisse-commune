@@ -17,8 +17,8 @@ import {
   Wifi,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
-import type {ComponentType, ReactNode} from 'react';
-import {lazy, Suspense, useEffect, useState} from 'react';
+import type {CSSProperties, ComponentType, ReactNode, TouchEvent} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {desks} from '../data/desks';
 import {galleryData} from '../data/gallery';
 import {rooms} from '../data/rooms';
@@ -54,6 +54,56 @@ const eventFormats = [
   },
 ] as const;
 
+const roomComparisonLayouts = [
+  {
+    id: 'boardroom',
+    label: 'Réunions',
+    capacities: {
+      atelier: '8',
+      board: '10',
+    },
+  },
+  {
+    id: 'ushape',
+    label: 'Présentation',
+    capacities: {
+      atelier: '8',
+      board: '9',
+    },
+  },
+  {
+    id: 'theatre',
+    label: 'Formation',
+    capacities: {
+      atelier: '10',
+      board: '-',
+    },
+  },
+] as const;
+
+const roomComparisonHighlights = [
+  {
+    label: 'Lumière du jour',
+    atelier: 'Oui, espace très lumineux',
+    board: 'Semi-naturelle, ambiance feutrée',
+  },
+  {
+    label: 'Usage idéal',
+    atelier: 'Ateliers, formations, présentations',
+    board: "Réunions d'équipes, rendez-vous client, ateliers",
+  },
+  {
+    label: 'Atout principal',
+    atelier: 'Salle ouverte, spacieuse, configuration souple',
+    board: 'Cadre confidentiel, table plus grande',
+  },
+  {
+    label: 'Équipement',
+    atelier: 'TV 65 pouces 4K AirPlay',
+    board: 'Système de vidéo-projecteur',
+  },
+] as const;
+
 const heroImages = [
   {
     src: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=1200',
@@ -71,13 +121,32 @@ const heroImages = [
 
 const sharedSpaceBaseRadii = ['0 0 10rem 10rem', '50% 50% 50% 0', '10rem 10rem 0 0'] as const;
 
+function getSharedSpaceImageOrder(sourceIndex: number) {
+  if (sourceIndex === 1) {
+    return [1, 0, 2] as const;
+  }
+
+  if (sourceIndex === 2) {
+    return [2, 1, 0] as const;
+  }
+
+  return [0, 1, 2] as const;
+}
+
+function getSharedSpaceMotionOffset(slotIndex: number, sourceIndex: number) {
+  return `${(sourceIndex - slotIndex) * 112}%`;
+}
+
 export function HomePage() {
-  const [hoveredSharedSpace, setHoveredSharedSpace] = useState<string | null>(null);
+  const [hoveredSharedSpace, setHoveredSharedSpace] = useState<{key: string; index: number} | null>(null);
+  const [pausedSharedSpaceRail, setPausedSharedSpaceRail] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
   const [roomImageIndexes, setRoomImageIndexes] = useState<Record<string, number>>({});
   const [roomCycles, setRoomCycles] = useState<Record<string, number>>({});
   const [roomCardSelections, setRoomCardSelections] = useState<Record<string, {mode: RoomBookingMode | null; options: string[]}>>({});
+  const deskTouchStartX = useRef<Record<string, number>>({});
+  const deskTouchStartY = useRef<Record<string, number>>({});
 
   useEffect(() => {
     applySeo({
@@ -159,20 +228,55 @@ export function HomePage() {
     });
   };
 
+  const handleDeskTouchStart = (deskId: string, event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+
+    deskTouchStartX.current[deskId] = touch.clientX;
+    deskTouchStartY.current[deskId] = touch.clientY;
+  };
+
+  const handleDeskTouchEnd = (deskId: string, imageCount: number, event: TouchEvent<HTMLDivElement>) => {
+    const startX = deskTouchStartX.current[deskId];
+    const startY = deskTouchStartY.current[deskId];
+    const touch = event.changedTouches[0];
+
+    if (startX === undefined || startY === undefined || !touch) {
+      return;
+    }
+
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    delete deskTouchStartX.current[deskId];
+    delete deskTouchStartY.current[deskId];
+
+    if (Math.abs(deltaX) < 40 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    goToDeskImage(deskId, deltaX < 0 ? 'next' : 'prev', imageCount);
+  };
+
   const updateRoomCardSelection = (roomId: string, nextSelection: {mode: RoomBookingMode | null; options: string[]}) => {
     setRoomCardSelections((current) => ({...current, [roomId]: nextSelection}));
   };
 
   const sharedSpaces = Object.entries(galleryData);
-  const activeSharedSpace = hoveredSharedSpace ? galleryData[hoveredSharedSpace as keyof typeof galleryData] : null;
-  const displayedSharedSpaces = hoveredSharedSpace
-    ? galleryData[hoveredSharedSpace as keyof typeof galleryData].images.slice(0, 3).map((image, index) => ({
-        slotKey: `hover-slot-${index}`,
-        galleryKey: hoveredSharedSpace,
-        image,
-        title: galleryData[hoveredSharedSpace as keyof typeof galleryData].title,
-        summary: galleryData[hoveredSharedSpace as keyof typeof galleryData].summary,
+  const activeSharedSpaceState = hoveredSharedSpace;
+  const activeSharedSpace = activeSharedSpaceState ? galleryData[activeSharedSpaceState.key as keyof typeof galleryData] : null;
+  const displayedSharedSpaces = activeSharedSpaceState
+    ? getSharedSpaceImageOrder(activeSharedSpaceState.index).map((imageIndex, slotIndex) => ({
+        slotKey: `hover-slot-${slotIndex}`,
+        galleryKey: activeSharedSpaceState.key,
+        image: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].images.slice(0, 3)[imageIndex],
+        title: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].title,
+        summary: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].summary,
         isHoveredState: true,
+        slotIndex,
+        sourceSlotIndex: activeSharedSpaceState.index,
       }))
     : sharedSpaces.map(([key, gallery], index) => ({
         slotKey: `base-slot-${index}`,
@@ -181,6 +285,8 @@ export function HomePage() {
         title: gallery.title,
         summary: gallery.summary,
         isHoveredState: false,
+        slotIndex: index,
+        sourceSlotIndex: index,
       }));
 
   return (
@@ -294,6 +400,7 @@ export function HomePage() {
             </motion.div>
           </div>
         </div>
+
       </section>
 
       <section id="bureaux" className="scroll-mt-24 bg-primary py-32">
@@ -316,7 +423,12 @@ export function HomePage() {
                   desk.available ? 'hover:-translate-y-2 hover:shadow-2xl' : 'opacity-80'
                 }`}
               >
-                <div className="relative h-56 overflow-hidden sm:h-64">
+                <div
+                  className="relative h-56 overflow-hidden sm:h-64"
+                  onTouchStart={(event) => handleDeskTouchStart(desk.id, event)}
+                  onTouchEnd={(event) => handleDeskTouchEnd(desk.id, desk.images.length, event)}
+                  style={{touchAction: 'pan-y'}}
+                >
                   {desk.images.map((image, index) => (
                     <img
                       key={`${desk.id}-${image}`}
@@ -507,7 +619,7 @@ export function HomePage() {
                     </div>
                   )}
                 </div>
-                <div className={`relative z-20 -mt-14 w-full rounded-[2rem] border border-gray-100 bg-white p-6 shadow-2xl sm:-mt-20 sm:p-8 lg:mt-0 lg:w-1/2 lg:p-12 ${
+                <div className={`relative z-20 -mt-14 w-full rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl sm:-mt-20 sm:p-8 lg:mt-0 lg:w-1/2 lg:p-12 ${
                   index % 2 === 0 ? 'lg:-ml-32' : 'lg:-mr-32'
                 }`}>
                   <div className="mb-7 border-b border-gray-100 pb-7 md:mb-8 md:pb-8">
@@ -539,7 +651,7 @@ export function HomePage() {
                                 options: roomCardSelection.options.filter((option) => nextOptions.includes(option)),
                               });
                             }}
-                            className={`rounded-2xl border px-4 py-4 text-center transition-all sm:px-5 ${
+                            className={`rounded-3xl border px-4 py-4 text-center transition-all sm:px-5 ${
                               roomCardSelection.mode === getRoomBookingMode(rate.label)
                                 ? 'border-primary bg-primary text-white shadow-md'
                                 : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
@@ -668,6 +780,100 @@ export function HomePage() {
               </div>
             );
           })}
+
+          <div className="mt-20 rounded-3xl border border-gray-200 bg-white p-6 shadow-xl sm:p-8 md:mt-24 md:p-10">
+            <div className="mb-10 text-center">
+              <h3 className="font-serif text-3xl font-black text-gray-900 md:text-4xl">Comparer les deux salles</h3>
+              <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-gray-600 md:text-base">
+                Un tableau simple pour comprendre les configurations possibles et choisir la salle la plus adaptée
+                à votre format de réunion.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-gray-200">
+              <div className="grid grid-cols-[1.1fr_repeat(3,minmax(0,1fr))] border-b border-gray-200 bg-gray-50">
+                <div className="px-4 py-5 sm:px-6" />
+                {roomComparisonLayouts.map((layout) => (
+                  <div key={layout.id} className="flex flex-col items-center justify-center gap-3 px-4 py-5 text-center sm:px-6">
+                    <RoomLayoutIcon layout={layout.id} />
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">{layout.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-[1.1fr_repeat(3,minmax(0,1fr))] border-b border-gray-200">
+                <div className="flex items-center border-r border-gray-200 px-4 py-5 sm:px-6">
+                  <div>
+                    <p className="font-serif text-2xl font-black text-gray-900">La Place</p>
+                    <p className="mt-1 text-sm text-gray-500">Ouverte, lumineuse, polyvalente</p>
+                  </div>
+                </div>
+                {roomComparisonLayouts.map((layout) => (
+                  <div key={`atelier-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-2xl font-black text-gray-900 last:border-r-0 sm:text-[2rem]">
+                    {layout.capacities.atelier}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-[1.1fr_repeat(3,minmax(0,1fr))]">
+                <div className="flex items-center border-r border-gray-200 px-4 py-5 sm:px-6">
+                  <div>
+                    <p className="font-serif text-2xl font-black text-gray-900">L&apos;Annexe</p>
+                    <p className="mt-1 text-sm text-gray-500">Fermée, confidentielle</p>
+                  </div>
+                </div>
+                {roomComparisonLayouts.map((layout) => (
+                  <div key={`board-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-2xl font-black text-gray-900 last:border-r-0 sm:text-[2rem]">
+                    {layout.capacities.board}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-3xl border border-gray-200">
+              <div className="hidden bg-gray-50 md:grid md:grid-cols-[0.8fr_1fr_1fr]">
+                <div className="border-r border-gray-200 px-4 py-4 md:px-6" />
+                <div className="border-r border-gray-200 px-4 py-4 text-center md:px-6">
+                  <p className="font-serif text-xl font-black text-gray-900">La Place</p>
+                </div>
+                <div className="px-4 py-4 text-center md:px-6">
+                  <p className="font-serif text-xl font-black text-gray-900">L&apos;Annexe</p>
+                </div>
+              </div>
+
+              {roomComparisonHighlights.map((item, index) => (
+                <div
+                  key={item.label}
+                  className={`grid gap-0 md:grid-cols-[0.8fr_1fr_1fr] ${
+                    index !== roomComparisonHighlights.length - 1 ? 'border-t border-gray-200' : 'border-t border-gray-200'
+                  }`}
+                >
+                  <div className="border-b border-gray-200 bg-gray-50 px-4 py-4 text-sm font-bold text-gray-900 md:border-b-0 md:border-r md:px-6">
+                    {item.label}
+                  </div>
+                  <div className="border-b border-gray-200 px-4 py-4 text-sm leading-relaxed text-gray-600 md:border-b-0 md:border-r md:px-6">
+                    {item.atelier}
+                  </div>
+                  <div className="px-4 py-4 text-sm leading-relaxed text-gray-600 md:px-6">
+                    {item.board}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-12 flex justify-center md:mt-14">
+            <button
+              type="button"
+              onClick={() => {
+                setPrefill({reservationType: 'salle'});
+                scrollToReservation();
+              }}
+              className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-4 text-sm font-bold text-white shadow-lg transition-colors hover:bg-primary/90 sm:text-base"
+            >
+              Planifier une réunion
+            </button>
+          </div>
         </div>
       </section>
 
@@ -684,40 +890,106 @@ export function HomePage() {
             </p>
           </div>
 
+          <div className="space-y-10 lg:hidden">
+            {sharedSpaces.map(([key, gallery], index) => {
+              const loopingImages = [...gallery.images, ...gallery.images];
+              const isPaused = pausedSharedSpaceRail === key;
+              const marqueeStyle = {
+                '--shared-marquee-duration': `${34 + index * 3}s`,
+                '--shared-marquee-gap': '0.875rem',
+              } as CSSProperties;
+
+              return (
+                <div key={key} className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-white">{gallery.title}</h3>
+                    <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/75">
+                      {gallery.summary}
+                    </p>
+                  </div>
+
+                  <div
+                    className="relative overflow-hidden py-1"
+                    onTouchStart={() => setPausedSharedSpaceRail(key)}
+                    onTouchEnd={() => setPausedSharedSpaceRail((current) => (current === key ? null : current))}
+                    onTouchCancel={() => setPausedSharedSpaceRail((current) => (current === key ? null : current))}
+                  >
+                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-primary via-primary/90 to-transparent" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-primary via-primary/90 to-transparent" />
+
+                    <div
+                      className={`shared-marquee-track ${index % 2 === 1 ? 'shared-marquee-right' : 'shared-marquee-left'} ${isPaused ? 'shared-marquee-paused' : ''}`}
+                      style={marqueeStyle}
+                    >
+                      {loopingImages.map((image, imageIndex) => (
+                        <div
+                          key={`${key}-${imageIndex}`}
+                          style={{borderRadius: sharedSpaceBaseRadii[index]}}
+                          className="relative h-40 w-52 flex-none overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)] sm:h-44 sm:w-60"
+                        >
+                          <img
+                            src={image}
+                            alt={gallery.title}
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                            decoding="async"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <div
-            className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8"
+            className="hidden grid-cols-1 gap-10 md:grid-cols-3 md:gap-8 lg:grid"
             onMouseLeave={() => setHoveredSharedSpace(null)}
           >
             {displayedSharedSpaces.map((space, index) => (
-              <motion.article
-                key={`shared-slot-${index}`}
+              <motion.button
+                key={`shared-slot-${index}-${activeSharedSpaceState?.key ?? 'base'}-${activeSharedSpaceState?.index ?? 'base'}`}
+                type="button"
                 className="flex flex-col items-center text-center"
                 onMouseEnter={() => {
-                  if (!hoveredSharedSpace && !space.isHoveredState) {
-                    setHoveredSharedSpace(space.galleryKey);
+                  if (!space.isHoveredState) {
+                    setHoveredSharedSpace({key: space.galleryKey, index});
                   }
                 }}
               >
                 <motion.div
-                  animate={{
-                    scale: hoveredSharedSpace ? [1, 0.97, 1] : 1,
-                  }}
+                  initial={space.isHoveredState
+                    ? {
+                        opacity: space.slotIndex === space.sourceSlotIndex ? 1 : 0.58,
+                        scale: space.slotIndex === space.sourceSlotIndex ? 1 : 0.996,
+                        x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
+                      }
+                    : false}
+                  animate={{opacity: 1, scale: 1, x: 0}}
                   transition={{
-                    scale: {duration: 0.28, ease: [0.22, 1, 0.36, 1]},
+                    opacity: {duration: 1.8, ease: [0.16, 1, 0.3, 1]},
+                    scale: {duration: 2.1, ease: [0.16, 1, 0.3, 1]},
+                    x: {duration: 2.45, ease: [0.16, 1, 0.3, 1]},
                   }}
-                  style={{borderRadius: sharedSpaceBaseRadii[index]}}
+                  style={{
+                    borderRadius: activeSharedSpaceState
+                      ? sharedSpaceBaseRadii[space.sourceSlotIndex]
+                      : sharedSpaceBaseRadii[index],
+                    zIndex: space.isHoveredState && space.slotIndex === space.sourceSlotIndex ? 3 : 1,
+                  }}
                   className="relative mb-6 h-56 w-56 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)] sm:h-64 sm:w-64 md:mb-8 md:h-80 md:w-80"
                 >
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={space.image}
-                      initial={{opacity: 0, scale: 1.1, filter: 'blur(10px)'}}
+                      initial={{opacity: 0, scale: 1.008, filter: 'blur(2px)'}}
                       animate={{opacity: 1, scale: 1, filter: 'blur(0px)'}}
-                      exit={{opacity: 0, scale: 0.92, filter: 'blur(8px)'}}
+                      exit={{opacity: 0, scale: 0.996, filter: 'blur(2px)'}}
                       transition={{
-                        opacity: {duration: 0.24, ease: 'easeInOut'},
-                        scale: {duration: 0.3, ease: [0.22, 1, 0.36, 1]},
-                        filter: {duration: 0.24, ease: 'easeOut'},
+                        opacity: {duration: 1.6, ease: [0.25, 0.1, 0.25, 1]},
+                        scale: {duration: 1.95, ease: [0.16, 1, 0.3, 1]},
+                        filter: {duration: 1.4, ease: [0.25, 0.1, 0.25, 1]},
                       }}
                       src={space.image}
                       alt={space.title}
@@ -728,11 +1000,11 @@ export function HomePage() {
                   </AnimatePresence>
                 </motion.div>
 
-                {!hoveredSharedSpace ? (
+                {!activeSharedSpaceState ? (
                   <motion.div
                     initial={false}
                     animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.28, ease: 'easeOut'}}
+                    transition={{duration: 1.1, ease: [0.25, 0.1, 0.25, 1]}}
                     className="max-w-[260px]"
                   >
                     <h3 className="text-xl font-bold text-white sm:text-2xl">{space.title}</h3>
@@ -744,19 +1016,19 @@ export function HomePage() {
                     <p className="mt-3 text-sm leading-relaxed">.</p>
                   </div>
                 )}
-              </motion.article>
+              </motion.button>
             ))}
           </div>
 
-          <div className="mt-8 min-h-[84px] text-center md:mt-10 md:min-h-[112px]">
+          <div className="mt-8 hidden min-h-[84px] text-center md:mt-10 md:min-h-[112px] lg:block">
             <AnimatePresence mode="wait">
               {activeSharedSpace ? (
                 <motion.div
-                  key={hoveredSharedSpace}
+                  key={activeSharedSpaceState?.key}
                   initial={{opacity: 0, y: 18, scale: 0.98}}
                   animate={{opacity: 1, y: 0, scale: 1}}
                   exit={{opacity: 0, y: 10, scale: 0.98}}
-                  transition={{duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+                  transition={{duration: 1.3, ease: [0.16, 1, 0.3, 1]}}
                 >
                   <h3 className="text-2xl font-bold text-white md:text-4xl">
                     {activeSharedSpace.title}
@@ -838,26 +1110,17 @@ export function HomePage() {
                 </h2>
                 <div className="mt-5 max-w-3xl space-y-4 text-sm leading-relaxed text-gray-600 md:mt-6 md:space-y-5 md:text-base">
                   <p>
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Esquisse</span> : première étude d’une composition picturale,
-                    sculpturale ou architecturale, qui en trace les grandes lignes et sert de base à sa réalisation.
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Esquisse</span> : première étude d’une composition picturale, sculpturale ou architecturale, qui en trace les grandes lignes et sert de base à sa réalisation.
                     <br />
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Commune</span> : ce qui se fait ensemble, à plusieurs, dans le partage
-                    et la mise en relation.
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Commune</span> : ce qui se fait ensemble, à plusieurs, dans le partage et la mise en relation.
                   </p>
 
                   <p>
-                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais
-                    tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité
-                    où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse
-                    des <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-medium text-primary">liens humains</span>. Pour une entreprise qui cherche une location de bureaux à Rennes,
-                    le collectif y a toute sa place, sans jamais effacer le besoin d’intimité.
+                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse des liens humains. <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Le collectif</span> y a toute sa place, sans jamais effacer le besoin d’intimité.
                   </p>
 
                   <p>
-                    Ici, chacun développe son activité à son rythme, dans son propre <span className="rounded-lg bg-primary/10 px-2 py-0.5 font-medium text-primary">bureau fermé</span>, tout en profitant
-                    d’<span className="rounded-lg bg-primary/10 px-2 py-0.5 font-medium text-primary">espaces partagés</span> pensés pour se retrouver, collaborer et avancer dans un environnement stimulant.
-                    Le lieu permet ainsi de concilier facilement location de bureaux à Rennes, confort
-                    quotidien et qualité des échanges.
+                    Ici, chaque entrepreneur, indépendant ou petite entreprise, développe son activité à son rythme, dans son bureau fermé et privatif, tout en profitant d’espaces partagés pensés pour <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">se retrouver, collaborer et avancer</span> dans un environnement stimulant. L’esquisse commune est donc le lieu idéal si vous recherchez une location de bureaux à Rennes, en ayant accès à des salles de réunions et phonebox, alliant confort, proximité et partage.
                   </p>
                 </div>
               </motion.div>
@@ -869,7 +1132,7 @@ export function HomePage() {
                 transition={{duration: 0.7, delay: 0.15}}
                 className="border-t border-gray-200 pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-[3.8rem]"
               >
-                <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+                <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
                   <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec]">
                     <img
                       src="/marika.png"
@@ -878,7 +1141,7 @@ export function HomePage() {
                     />
                   </div>
 
-                  <div className="flex-1">
+                  <div className="flex-1 text-center md:text-left">
                     <h3 className="font-serif text-3xl font-black text-gray-900 md:text-4xl">Marika</h3>
                     <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-600 md:mt-4 md:text-base">
                       Je suis à votre écoute pour vous présenter le lieu, comprendre votre activité et vous orienter
@@ -909,7 +1172,7 @@ export function HomePage() {
               whileInView={{opacity: 1, y: 0}}
               viewport={{once: true}}
               transition={{duration: 0.7, delay: 0.1}}
-              className="mt-10 overflow-hidden rounded-[2rem] md:mt-12"
+              className="mt-10 overflow-hidden rounded-3xl md:mt-12"
             >
               <img
                 src="/esquisse-exterieur.jpg"
@@ -977,5 +1240,56 @@ function LocationCard({icon, title, description}: {icon: ReactNode; title: strin
       <h3 className="mb-2 mt-4 font-bold text-gray-900">{title}</h3>
       <p className="flex-grow text-sm text-gray-500">{description}</p>
     </div>
+  );
+}
+
+function RoomLayoutIcon({layout}: {layout: 'boardroom' | 'ushape' | 'theatre'}) {
+  if (layout === 'boardroom') {
+    return (
+      <svg viewBox="0 0 120 86" className="h-14 w-24 text-primary" aria-hidden="true">
+        <rect x="31" y="24" width="58" height="30" rx="2" fill="currentColor" />
+        <circle cx="23" cy="39" r="4.5" fill="currentColor" />
+        <circle cx="97" cy="39" r="4.5" fill="currentColor" />
+        <circle cx="43" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="60" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="77" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="43" cy="63" r="4.5" fill="currentColor" />
+        <circle cx="60" cy="63" r="4.5" fill="currentColor" />
+        <circle cx="77" cy="63" r="4.5" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  if (layout === 'ushape') {
+    return (
+      <svg viewBox="0 0 120 86" className="h-14 w-24 text-primary" aria-hidden="true">
+        <rect x="30" y="24" width="54" height="30" rx="2" fill="currentColor" />
+        <rect x="96" y="14" width="6" height="50" rx="1" fill="currentColor" />
+        <circle cx="42" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="59" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="76" cy="15" r="4.5" fill="currentColor" />
+        <circle cx="42" cy="63" r="4.5" fill="currentColor" />
+        <circle cx="59" cy="63" r="4.5" fill="currentColor" />
+        <circle cx="76" cy="63" r="4.5" fill="currentColor" />
+        <circle cx="18" cy="31" r="4.5" fill="currentColor" />
+        <circle cx="18" cy="47" r="4.5" fill="currentColor" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 120 86" className="h-14 w-24 text-primary" aria-hidden="true">
+      <rect x="24" y="18" width="62" height="6" rx="1" fill="currentColor" />
+      <circle cx="23" cy="42" r="4.5" fill="currentColor" />
+      <circle cx="39" cy="42" r="4.5" fill="currentColor" />
+      <circle cx="55" cy="42" r="4.5" fill="currentColor" />
+      <circle cx="71" cy="42" r="4.5" fill="currentColor" />
+      <circle cx="87" cy="42" r="4.5" fill="currentColor" />
+      <circle cx="23" cy="58" r="4.5" fill="currentColor" />
+      <circle cx="39" cy="58" r="4.5" fill="currentColor" />
+      <circle cx="55" cy="58" r="4.5" fill="currentColor" />
+      <circle cx="71" cy="58" r="4.5" fill="currentColor" />
+      <circle cx="87" cy="58" r="4.5" fill="currentColor" />
+    </svg>
   );
 }

@@ -73,6 +73,7 @@ const timeSlots = Array.from({length: 18}, (_, index) => {
 });
 
 const roomAttendeeOptions = Array.from({length: 8}, (_, index) => `${index + 1}`);
+const isEventReservationAvailable = false;
 
 const initialContactState: ContactPayload = {
   company: '',
@@ -120,6 +121,7 @@ function getRoomScheduleLabel({
 
 export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   const [formStep, setFormStep] = useState(1);
+  const [isDesktop, setIsDesktop] = useState(() => (typeof window !== 'undefined' ? window.innerWidth >= 1024 : false));
   const [reservationType, setReservationType] = useState<ReservationType | null>('bureau');
   const [selectedDeskId, setSelectedDeskId] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -141,10 +143,25 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   });
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const syncViewport = (event?: MediaQueryListEvent) => {
+      setIsDesktop(event ? event.matches : mediaQuery.matches);
+    };
+
+    syncViewport();
+    mediaQuery.addEventListener('change', syncViewport);
+
+    return () => mediaQuery.removeEventListener('change', syncViewport);
+  }, []);
+
+  useEffect(() => {
     if (!prefill) {
       return;
     }
 
+    const normalizedReservationType = prefill.reservationType === 'event' && !isEventReservationAvailable
+      ? 'bureau'
+      : prefill.reservationType;
     const prefilledRoom = prefill.roomId ? rooms.find((room) => room.id === prefill.roomId) ?? null : null;
     const allowedPrefillOptions = getAvailableRoomOptions({
       allOptions: prefilledRoom?.options ?? [],
@@ -152,26 +169,26 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       halfDaySlot: null,
     });
 
-    setReservationType(prefill.reservationType);
-    setSelectedDeskId(prefill.deskId ?? null);
-    setSelectedRoomId(prefill.roomId ?? null);
-    setSelectedEventFormatId(prefill.eventFormatId ?? null);
+    setReservationType(normalizedReservationType);
+    setSelectedDeskId(normalizedReservationType === 'bureau' ? prefill.deskId ?? null : null);
+    setSelectedRoomId(normalizedReservationType === 'salle' ? prefill.roomId ?? null : null);
+    setSelectedEventFormatId(normalizedReservationType === 'event' ? prefill.eventFormatId ?? null : null);
     setResDate(undefined);
     setResTime('');
-    setRoomBookingMode(prefill.roomBookingMode ?? null);
+    setRoomBookingMode(normalizedReservationType === 'salle' ? prefill.roomBookingMode ?? null : null);
     setRoomStartTime('');
     setRoomEndTime('');
     setRoomHalfDaySlot(null);
-    setSelectedRoomOptions(
-      (prefill.selectedRoomOptions ?? []).filter((option) => allowedPrefillOptions.includes(option)),
-    );
+    setSelectedRoomOptions(normalizedReservationType === 'salle'
+      ? (prefill.selectedRoomOptions ?? []).filter((option) => allowedPrefillOptions.includes(option))
+      : []);
     setSubmitState({status: 'idle', message: ''});
 
-    if (prefill.reservationType === 'bureau' && prefill.deskId) {
+    if (normalizedReservationType === 'bureau' && prefill.deskId) {
       setFormStep(3);
-    } else if (prefill.reservationType === 'salle' && prefill.roomId) {
+    } else if (normalizedReservationType === 'salle' && prefill.roomId) {
       setFormStep(3);
-    } else if (prefill.reservationType === 'event' && prefill.eventFormatId) {
+    } else if (normalizedReservationType === 'event' && prefill.eventFormatId) {
       setFormStep(3);
     } else {
       setFormStep(2);
@@ -252,6 +269,10 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
         : 'Décrivez votre événement, la jauge, les espaces souhaités ou toute précision utile.';
 
   const handleTypeSelect = (type: ReservationType) => {
+    if (type === 'event' && !isEventReservationAvailable) {
+      return;
+    }
+
     setReservationType(type);
     setSelectedDeskId(null);
     setSelectedRoomId(null);
@@ -263,8 +284,11 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     setRoomEndTime('');
     setRoomHalfDaySlot(null);
     setSelectedRoomOptions([]);
-    setFormStep(2);
     setSubmitState({status: 'idle', message: ''});
+
+    if (isDesktop) {
+      setFormStep(2);
+    }
   };
 
   const resetForm = () => {
@@ -300,6 +324,20 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     }
 
     setSubmitState({status: 'submitting', message: ''});
+
+    const isLocalPreview =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    if (isLocalPreview) {
+      window.setTimeout(() => {
+        setSubmitState({
+          status: 'success',
+          message: 'Votre demande a bien été envoyée.',
+        });
+      }, 450);
+      return;
+    }
 
     try {
       const response = await fetch('/api/reservation', {
@@ -345,6 +383,71 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     }
   };
 
+  const downloadCalendarInvite = () => {
+    if (!resDate) {
+      return;
+    }
+
+    const eventStart = new Date(resDate);
+    const eventEnd = new Date(resDate);
+
+    if (reservationType === 'bureau') {
+      const [hours, minutes] = resTime.split(':').map((value) => Number(value));
+      eventStart.setHours(Number.isFinite(hours) ? hours : 9, Number.isFinite(minutes) ? minutes : 0, 0, 0);
+      eventEnd.setHours(eventStart.getHours() + 1, eventStart.getMinutes(), 0, 0);
+    } else if (reservationType === 'salle' && roomBookingMode === 'hourly' && roomStartTime && roomEndTime) {
+      const [startHours, startMinutes] = roomStartTime.split(':').map((value) => Number(value));
+      const [endHours, endMinutes] = roomEndTime.split(':').map((value) => Number(value));
+      eventStart.setHours(Number.isFinite(startHours) ? startHours : 9, Number.isFinite(startMinutes) ? startMinutes : 0, 0, 0);
+      eventEnd.setHours(Number.isFinite(endHours) ? endHours : eventStart.getHours() + 1, Number.isFinite(endMinutes) ? endMinutes : 0, 0, 0);
+    } else if (reservationType === 'salle' && roomBookingMode === 'halfday') {
+      if (roomHalfDaySlot === 'afternoon') {
+        eventStart.setHours(14, 0, 0, 0);
+        eventEnd.setHours(18, 0, 0, 0);
+      } else {
+        eventStart.setHours(9, 0, 0, 0);
+        eventEnd.setHours(13, 0, 0, 0);
+      }
+    } else {
+      eventStart.setHours(9, 0, 0, 0);
+      eventEnd.setHours(18, 0, 0, 0);
+    }
+
+    const formatIcsDate = (date: Date) =>
+      `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, '0')}${String(date.getUTCDate()).padStart(2, '0')}T${String(date.getUTCHours()).padStart(2, '0')}${String(date.getUTCMinutes()).padStart(2, '0')}00Z`;
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//L-esquisse commune//Reservation//FR',
+      'BEGIN:VEVENT',
+      `UID:${Date.now()}@esquisse.aidhabitat.fr`,
+      `DTSTAMP:${formatIcsDate(new Date())}`,
+      `DTSTART:${formatIcsDate(eventStart)}`,
+      `DTEND:${formatIcsDate(eventEnd)}`,
+      `SUMMARY:${selectedOfferLabel}`,
+      `DESCRIPTION:${submitState.message || 'Demande bien envoyée.'}`,
+      `LOCATION:${siteConfig.address.street}, ${siteConfig.address.postalCode} ${siteConfig.address.city}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\n');
+
+    const blob = new Blob([icsContent], {type: 'text/calendar;charset=utf-8'});
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = 'rendez-vous-esquisse-commune.ics';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const returnToTop = () => {
+    resetForm();
+    document.getElementById('hero')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+  };
+
   return (
     <div className={`mx-auto w-full rounded-3xl bg-[#F4F4F5] p-4 shadow-2xl transition-[max-width] duration-300 ease-out sm:p-6 md:p-8 ${
       isContactStep ? 'max-w-6xl' : 'max-w-2xl'
@@ -387,10 +490,21 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                   active={reservationType === 'event'}
                   image="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=600"
                   title="Événement d'entreprise"
-                  description="Configuration à l’heure avec espaces partagés et accompagnement."
+                  description={isEventReservationAvailable ? "Configuration à l’heure avec espaces partagés et accompagnement." : 'Actuellement indisponible'}
+                  badge={isEventReservationAvailable ? undefined : 'Indisponible'}
+                  disabled={!isEventReservationAvailable}
                   onClick={() => handleTypeSelect('event')}
                 />
               </div>
+
+              <button
+                type="button"
+                disabled={!reservationType}
+                onClick={() => setFormStep(2)}
+                className="mb-8 w-full rounded-xl bg-primary py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+              >
+                Continuer
+              </button>
 
               <Progress step={1} totalSteps={totalSteps} />
             </StepFrame>
@@ -413,8 +527,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
             selectedId={selectedDeskId}
             onSelect={(id) => {
               setSelectedDeskId(id);
-              setFormStep(3);
+              if (isDesktop) {
+                setFormStep(3);
+              }
             }}
+            onContinue={() => setFormStep(3)}
+            showContinue={!isDesktop}
           />
         )}
 
@@ -439,8 +557,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               setRoomEndTime('');
               setRoomHalfDaySlot(null);
               setSelectedRoomOptions([]);
-              setFormStep(3);
+              if (isDesktop) {
+                setFormStep(3);
+              }
             }}
+            onContinue={() => setFormStep(3)}
+            showContinue={!isDesktop}
           />
         )}
 
@@ -458,8 +580,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
             selectedId={selectedEventFormatId}
             onSelect={(id) => {
               setSelectedEventFormatId(id as EventFormatId);
-              setFormStep(3);
+              if (isDesktop) {
+                setFormStep(3);
+              }
             }}
+            onContinue={() => setFormStep(3)}
+            showContinue={!isDesktop}
           />
         )}
 
@@ -584,7 +710,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                                 setRoomStartTime('');
                                 setRoomEndTime('');
                                 setRoomHalfDaySlot(null);
-                                if (mode === 'day') {
+                                if (isDesktop && mode === 'day') {
                                   setFormStep(4);
                                 }
                               }}
@@ -624,7 +750,11 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                                 setRoomStartTime(event.target.value);
                                 if (roomEndTime && timeSlots.indexOf(roomEndTime) <= timeSlots.indexOf(event.target.value)) {
                                   setRoomEndTime('');
-                                } else if (roomEndTime && timeSlots.indexOf(roomEndTime) > timeSlots.indexOf(event.target.value)) {
+                                } else if (
+                                  isDesktop &&
+                                  roomEndTime &&
+                                  timeSlots.indexOf(roomEndTime) > timeSlots.indexOf(event.target.value)
+                                ) {
                                   setFormStep(4);
                                 }
                               }}
@@ -646,7 +776,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                               value={roomEndTime}
                               onChange={(event) => {
                                 setRoomEndTime(event.target.value);
-                                if (roomStartTime && timeSlots.indexOf(event.target.value) > timeSlots.indexOf(roomStartTime)) {
+                                if (isDesktop && roomStartTime && timeSlots.indexOf(event.target.value) > timeSlots.indexOf(roomStartTime)) {
                                   setFormStep(4);
                                 }
                               }}
@@ -674,7 +804,9 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                             type="button"
                               onClick={() => {
                                 setRoomHalfDaySlot('morning');
-                                setFormStep(4);
+                                if (isDesktop) {
+                                  setFormStep(4);
+                                }
                               }}
                             className={`rounded-2xl border p-4 text-left transition-all ${
                               roomHalfDaySlot === 'morning'
@@ -691,7 +823,9 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                             type="button"
                               onClick={() => {
                                 setRoomHalfDaySlot('afternoon');
-                                setFormStep(4);
+                                if (isDesktop) {
+                                  setFormStep(4);
+                                }
                               }}
                             className={`rounded-2xl border p-4 text-left transition-all ${
                               roomHalfDaySlot === 'afternoon'
@@ -725,7 +859,9 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           type="button"
                           onClick={() => {
                             setResTime(time);
-                            setFormStep(4);
+                            if (isDesktop) {
+                              setFormStep(4);
+                            }
                           }}
                           className={`rounded-xl border py-3 text-sm font-medium transition-all ${
                             resTime === time
@@ -741,6 +877,15 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                 )}
               </motion.div>
             )}
+
+            <button
+              type="button"
+              disabled={!roomSelectionReady}
+              onClick={() => setFormStep(4)}
+              className="w-full rounded-xl bg-primary py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 lg:hidden"
+            >
+              Continuer
+            </button>
 
               <div className="mt-8">
                 <Progress step={3} totalSteps={totalSteps} />
@@ -978,25 +1123,44 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               </div>
 
             {submitState.status === 'success' ? (
-              <div className="space-y-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-950">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={18} />
-                  <div>
-                    <p className="font-bold">{submitState.message}</p>
-                    <p className="mt-2 leading-relaxed">
-                      La demande a été envoyée directement à <span className="font-semibold">{siteConfig.email}</span> depuis l’adresse
-                      d’envoi serveur configurée pour le site.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="w-full rounded-xl bg-primary py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90"
+              <div className="flex flex-col items-center py-8 text-center">
+                <motion.div
+                  initial={{opacity: 0, scale: 0.7, rotate: -10}}
+                  animate={{opacity: 1, scale: 1, rotate: 0}}
+                  transition={{duration: 0.35, ease: 'easeOut'}}
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary"
                 >
-                  Envoyer une autre demande
-                </button>
+                  <CheckCircle2 size={32} strokeWidth={2.4} />
+                </motion.div>
+
+                <motion.div
+                  initial={{opacity: 0, y: 12}}
+                  animate={{opacity: 1, y: 0}}
+                  transition={{duration: 0.3, delay: 0.08, ease: 'easeOut'}}
+                  className="mt-5"
+                >
+                  <p className="text-2xl font-bold text-primary">Demande bien envoyée</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-500">
+                    Nous revenons vers vous rapidement pour confirmer votre demande et organiser la suite.
+                  </p>
+                </motion.div>
+
+                <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={downloadCalendarInvite}
+                    className="rounded-xl border border-primary/20 bg-white px-5 py-4 text-sm font-bold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    Ajouter à mon agenda
+                  </button>
+                  <button
+                    type="button"
+                    onClick={returnToTop}
+                    className="rounded-xl bg-primary px-5 py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90"
+                  >
+                    Retourner à l&apos;accueil
+                  </button>
+                </div>
               </div>
             ) : (
               <form className="space-y-3" onSubmit={handleSubmit}>
@@ -1212,8 +1376,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
             )}
 
             <p className="mt-4 text-center text-xs font-medium text-gray-500">
-              La demande est envoyée directement à <a href={`mailto:${siteConfig.email}`} className="text-primary underline underline-offset-4">{siteConfig.email}</a> sans ouverture de boîte mail.
-              {reservationType === 'bureau' && ' Nous revenons ensuite vers vous pour confirmer la visite du bureau.'}
+              La demande est envoyée directement à <a href={`mailto:${siteConfig.email}`} className="text-primary underline underline-offset-4">{siteConfig.email}</a>.
             </p>
 
               <div className="mt-8">
@@ -1233,6 +1396,7 @@ function OfferButton({
   title,
   description,
   badge,
+  disabled = false,
   onClick,
 }: {
   active: boolean;
@@ -1240,17 +1404,19 @@ function OfferButton({
   title: string;
   description: string;
   badge?: string;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={`flex items-start gap-4 rounded-2xl border-2 p-5 text-left transition-all ${
         active
           ? 'border-primary bg-primary text-white shadow-md'
           : 'border-transparent bg-white text-gray-900 shadow-sm hover:border-primary/20'
-      }`}
+      } ${disabled ? 'cursor-not-allowed opacity-60 grayscale hover:border-transparent' : ''}`}
     >
       <div className="mr-1 h-14 w-14 shrink-0 overflow-hidden rounded-xl">
         <img
@@ -1273,7 +1439,7 @@ function OfferButton({
             </span>
           )}
         </div>
-        <span className={`text-xs ${active ? 'text-white/80' : 'text-gray-500'}`}>{description}</span>
+        <span className={`hidden text-xs sm:block ${active ? 'text-white/80' : 'text-gray-500'}`}>{description}</span>
       </div>
     </button>
   );
@@ -1333,6 +1499,8 @@ function SelectionStep({
   items,
   selectedId,
   onSelect,
+  onContinue,
+  showContinue,
 }: {
   title: string;
   totalSteps: number;
@@ -1340,6 +1508,8 @@ function SelectionStep({
   items: Array<{id: string; title: string; subtitle: string; icon: ReactNode; image?: string; disabled?: boolean}>;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onContinue: () => void;
+  showContinue: boolean;
 }) {
   return (
     <motion.div
@@ -1397,6 +1567,17 @@ function SelectionStep({
           ))}
         </div>
 
+        {showContinue ? (
+          <button
+            type="button"
+            disabled={!selectedId}
+            onClick={onContinue}
+            className="mb-8 w-full rounded-xl bg-primary py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Continuer
+          </button>
+        ) : null}
+
         <Progress step={2} totalSteps={totalSteps} />
       </StepFrame>
     </motion.div>
@@ -1452,6 +1633,7 @@ function Field({
     <div>
       <label htmlFor={id} className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-500">
         {label}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
       </label>
       <div className="relative">
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>
