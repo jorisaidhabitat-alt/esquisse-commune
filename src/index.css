@@ -5,7 +5,7 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --color-primary: #4B4C9D;
+  --color-primary: #2f208b;
 }
 
 html {

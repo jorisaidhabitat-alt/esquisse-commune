@@ -11,12 +11,9 @@ export const galleryData = {
       'Lave-vaisselle',
     ],
     images: [
-      'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1556910110-a5a63dfd393c?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1588854337115-1c67d9247e4d?auto=format&fit=crop&q=80&w=800',
+      '/gallery/cafet-6.webp',
+      '/gallery/cafet-5.webp',
+      '/gallery/cafet-2.webp',
     ],
   },
   pause: {
@@ -24,12 +21,9 @@ export const galleryData = {
     summary: 'Un espace détente pensé pour le partage.',
     services: ['Canapés modulables', 'Baby-foot', 'Bibliothèque partagée', 'Plantes purifiantes', 'Lumière tamisée'],
     images: [
-      'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1600607686527-6fb886090705?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=800',
+      '/gallery/salon-4.webp',
+      '/gallery/salon-2.webp',
+      '/gallery/salon-1.webp',
     ],
   },
   call: {

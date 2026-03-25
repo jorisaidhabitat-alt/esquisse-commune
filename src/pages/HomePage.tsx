@@ -134,7 +134,11 @@ function getSharedSpaceImageOrder(sourceIndex: number) {
 }
 
 function getSharedSpaceMotionOffset(slotIndex: number, sourceIndex: number) {
-  return `${(sourceIndex - slotIndex) * 112}%`;
+  if (slotIndex === sourceIndex) {
+    return '0px';
+  }
+
+  return `calc(${sourceIndex - slotIndex} * (100% + 2rem))`;
 }
 
 export function HomePage() {
@@ -948,63 +952,105 @@ export function HomePage() {
             onMouseLeave={() => setHoveredSharedSpace(null)}
           >
             {displayedSharedSpaces.map((space, index) => (
-              <motion.button
+              <div
                 key={`shared-slot-${index}-${activeSharedSpaceState?.key ?? 'base'}-${activeSharedSpaceState?.index ?? 'base'}`}
-                type="button"
                 className="flex flex-col items-center text-center"
-                onMouseEnter={() => {
-                  if (!space.isHoveredState) {
-                    setHoveredSharedSpace({key: space.galleryKey, index});
-                  }
-                }}
               >
-                <motion.div
-                  initial={space.isHoveredState
-                    ? {
-                        opacity: space.slotIndex === space.sourceSlotIndex ? 1 : 0.58,
-                        scale: space.slotIndex === space.sourceSlotIndex ? 1 : 0.996,
-                        x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
-                      }
-                    : false}
-                  animate={{opacity: 1, scale: 1, x: 0}}
-                  transition={{
-                    opacity: {duration: 1.8, ease: [0.16, 1, 0.3, 1]},
-                    scale: {duration: 2.1, ease: [0.16, 1, 0.3, 1]},
-                    x: {duration: 2.45, ease: [0.16, 1, 0.3, 1]},
-                  }}
-                  style={{
-                    borderRadius: activeSharedSpaceState
-                      ? sharedSpaceBaseRadii[space.sourceSlotIndex]
-                      : sharedSpaceBaseRadii[index],
-                    zIndex: space.isHoveredState && space.slotIndex === space.sourceSlotIndex ? 3 : 1,
-                  }}
-                  className="relative mb-6 h-56 w-56 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)] sm:h-64 sm:w-64 md:mb-8 md:h-80 md:w-80"
-                >
-                  <AnimatePresence mode="wait">
-                    <motion.img
-                      key={space.image}
-                      initial={{opacity: 0, scale: 1.008, filter: 'blur(2px)'}}
-                      animate={{opacity: 1, scale: 1, filter: 'blur(0px)'}}
-                      exit={{opacity: 0, scale: 0.996, filter: 'blur(2px)'}}
-                      transition={{
-                        opacity: {duration: 1.6, ease: [0.25, 0.1, 0.25, 1]},
-                        scale: {duration: 1.95, ease: [0.16, 1, 0.3, 1]},
-                        filter: {duration: 1.4, ease: [0.25, 0.1, 0.25, 1]},
-                      }}
-                      src={space.image}
-                      alt={space.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                      decoding="async"
-                    />
-                  </AnimatePresence>
-                </motion.div>
+                <div className="mb-6 inline-block md:mb-8">
+                  <div className="relative h-56 w-56 sm:h-64 sm:w-64 md:h-80 md:w-80">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={`shared-image-${index}-${space.galleryKey}-${space.image}-${space.isHoveredState ? 'hover' : 'base'}`}
+                        initial={space.isHoveredState
+                          ? {
+                              opacity: space.slotIndex === space.sourceSlotIndex ? 1 : 0.04,
+                              scale: space.slotIndex === space.sourceSlotIndex ? 1 : 0.988,
+                              x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
+                              filter: space.slotIndex === space.sourceSlotIndex ? 'blur(0px)' : 'blur(6px)',
+                            }
+                          : {
+                              opacity: 1,
+                              scale: 1,
+                            }}
+                        animate={{opacity: 1, scale: 1, x: 0, filter: 'blur(0px)'}}
+                        exit={space.isHoveredState
+                          ? {
+                              opacity: space.slotIndex === space.sourceSlotIndex ? 0.94 : 0.56,
+                              scale: space.slotIndex === space.sourceSlotIndex ? 0.998 : 0.972,
+                              x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
+                              filter: space.slotIndex === space.sourceSlotIndex ? 'blur(0px)' : 'blur(3px)',
+                              transition: space.slotIndex === space.sourceSlotIndex
+                                ? {
+                                    opacity: {duration: 0.62, ease: [0.16, 1, 0.3, 1]},
+                                    scale: {duration: 0.72, ease: [0.16, 1, 0.3, 1]},
+                                    x: {duration: 0.78, ease: [0.16, 1, 0.3, 1]},
+                                    filter: {duration: 0.52, ease: [0.16, 1, 0.3, 1]},
+                                  }
+                                : {
+                                    opacity: {duration: 2.2, ease: [0.16, 1, 0.3, 1]},
+                                    scale: {duration: 2.35, ease: [0.16, 1, 0.3, 1]},
+                                    x: {duration: 2.65, ease: [0.16, 1, 0.3, 1]},
+                                    filter: {duration: 1.95, ease: [0.16, 1, 0.3, 1]},
+                                  },
+                            }
+                          : {
+                              opacity: 1,
+                              scale: 1,
+                            }}
+                        transition={{
+                          opacity: {
+                            duration: space.slotIndex === space.sourceSlotIndex ? 0.58 : 2.35,
+                            ease: [0.16, 1, 0.3, 1],
+                            delay: space.slotIndex === space.sourceSlotIndex ? 0 : 0.18,
+                          },
+                          scale: {
+                            duration: space.slotIndex === space.sourceSlotIndex ? 0.62 : 2.45,
+                            ease: [0.16, 1, 0.3, 1],
+                          },
+                          x: {
+                            duration: space.slotIndex === space.sourceSlotIndex ? 0.68 : 2.8,
+                            ease: [0.16, 1, 0.3, 1],
+                          },
+                          filter: {
+                            duration: space.slotIndex === space.sourceSlotIndex ? 0.48 : 2.1,
+                            ease: [0.16, 1, 0.3, 1],
+                            delay: space.slotIndex === space.sourceSlotIndex ? 0 : 0.12,
+                          },
+                        }}
+                        onMouseEnter={() => {
+                          if (!space.isHoveredState) {
+                            setHoveredSharedSpace({key: space.galleryKey, index});
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredSharedSpace(null)}
+                        style={{
+                          borderRadius: activeSharedSpaceState
+                            ? sharedSpaceBaseRadii[space.sourceSlotIndex]
+                            : sharedSpaceBaseRadii[index],
+                          clipPath: activeSharedSpaceState
+                            ? `inset(0 round ${sharedSpaceBaseRadii[space.sourceSlotIndex]})`
+                            : `inset(0 round ${sharedSpaceBaseRadii[index]})`,
+                          zIndex: space.isHoveredState && space.slotIndex === space.sourceSlotIndex ? 3 : 1,
+                        }}
+                        className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
+                      >
+                        <img
+                          src={space.image}
+                          alt={space.title}
+                          className="absolute inset-0 h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          decoding="async"
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </div>
 
                 {!activeSharedSpaceState ? (
                   <motion.div
                     initial={false}
                     animate={{opacity: 1, y: 0}}
-                    transition={{duration: 1.1, ease: [0.25, 0.1, 0.25, 1]}}
+                    transition={{duration: 0.48, ease: [0.25, 0.1, 0.25, 1]}}
                     className="max-w-[260px]"
                   >
                     <h3 className="text-xl font-bold text-white sm:text-2xl">{space.title}</h3>
@@ -1016,7 +1062,7 @@ export function HomePage() {
                     <p className="mt-3 text-sm leading-relaxed">.</p>
                   </div>
                 )}
-              </motion.button>
+              </div>
             ))}
           </div>
 
@@ -1028,7 +1074,7 @@ export function HomePage() {
                   initial={{opacity: 0, y: 18, scale: 0.98}}
                   animate={{opacity: 1, y: 0, scale: 1}}
                   exit={{opacity: 0, y: 10, scale: 0.98}}
-                  transition={{duration: 1.3, ease: [0.16, 1, 0.3, 1]}}
+                  transition={{duration: 0.6, ease: [0.16, 1, 0.3, 1]}}
                 >
                   <h3 className="text-2xl font-bold text-white md:text-4xl">
                     {activeSharedSpace.title}
