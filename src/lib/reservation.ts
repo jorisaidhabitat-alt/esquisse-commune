@@ -136,7 +136,6 @@ export function buildReservationText({
     '',
     `Type de demande : ${reservationTypeLabel[reservationType]}`,
     `Date souhaitée : ${requestedDate}`,
-    `Nom : ${contact.fullName}`,
     `Email : ${contact.email}`,
     `Téléphone : ${contact.phone}`,
   ];
@@ -161,6 +160,10 @@ export function buildReservationText({
 
   if (contact.company) {
     lines.push(`Entreprise : ${contact.company}`);
+  }
+
+  if (contact.fullName) {
+    lines.push(`Nom : ${contact.fullName}`);
   }
 
   if (contact.activity) {

@@ -5,7 +5,8 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --color-primary: #2f208b;
+  --color-primary: #00387B;
+  --color-secondary: #A5C1E7;
 }
 
 html {
@@ -31,7 +32,7 @@ button:disabled {
 .rdp {
   --rdp-cell-size: 40px;
   --rdp-accent-color: var(--color-primary);
-  --rdp-background-color: #eef2ff;
+  --rdp-background-color: var(--color-secondary);
   margin: 0;
 }
 
@@ -100,6 +101,24 @@ button:disabled {
   }
 }
 
+.mobile-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms ease;
+}
+
+.mobile-accordion-inner {
+  overflow: hidden;
+}
+
+details[open] > .mobile-accordion-content {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
 .shared-marquee-track {
   display: flex;
   width: max-content;
@@ -150,5 +169,9 @@ button:disabled {
 
   .shared-space-image-breathe {
     animation: none;
+  }
+
+  .mobile-accordion-content {
+    transition: none;
   }
 }

@@ -5,25 +5,23 @@ import {
   Car,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
   Coffee,
   Compass,
-  Euro,
   Info,
   MapPin,
   Maximize,
   MonitorPlay,
   Users,
+  Wallet,
   Wifi,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
-import type {ComponentType, ReactNode, TouchEvent} from 'react';
+import type {ComponentType, CSSProperties, ReactNode, TouchEvent} from 'react';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {desks} from '../data/desks';
 import {galleryData} from '../data/gallery';
 import {rooms} from '../data/rooms';
 import {
-  getAvailableRoomOptions,
   getRoomBookingMode,
   type RoomBookingMode,
 } from '../lib/reservation';
@@ -106,44 +104,28 @@ const roomComparisonHighlights = [
 
 const heroImages = [
   {
-    src: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=1200',
-    alt: 'Bureau privé lumineux à louer près de Rennes',
+    src: '/gallery/salon-3.webp',
+    alt: 'Salle de pause partagée près de Rennes',
   },
   {
-    src: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200',
-    alt: 'Salle de réunion proche de Rennes',
+    src: '/gallery/cafet-6.webp',
+    alt: 'Cuisine partagée près de Rennes',
+    objectPosition: '64% center',
   },
   {
-    src: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&q=80&w=1200',
-    alt: 'Espace de travail partagé près de Rennes',
+    src: '/gallery/phonebox-3.webp',
+    alt: 'Phone box à Chartres-de-Bretagne, proche de Rennes',
+    objectPosition: '28% center',
   },
 ] as const;
 
 const sharedSpaceBaseRadii = ['0 0 10rem 10rem', '50% 50% 50% 0', '10rem 10rem 0 0'] as const;
-
-function getSharedSpaceImageOrder(sourceIndex: number) {
-  if (sourceIndex === 1) {
-    return [1, 0, 2] as const;
-  }
-
-  if (sourceIndex === 2) {
-    return [2, 1, 0] as const;
-  }
-
-  return [0, 1, 2] as const;
-}
-
-function getSharedSpaceMotionOffset(slotIndex: number, sourceIndex: number) {
-  if (slotIndex === sourceIndex) {
-    return '0px';
-  }
-
-  return `${(sourceIndex - slotIndex) * 26}px`;
-}
+const sharedSpaces = Object.entries(galleryData);
 
 export function HomePage() {
-  const [hoveredSharedSpace, setHoveredSharedSpace] = useState<{key: string; index: number} | null>(null);
   const [selectedSharedSpace, setSelectedSharedSpace] = useState<{key: string; index: number} | null>(null);
+  const [sharedSpaceCycleReset, setSharedSpaceCycleReset] = useState(0);
+  const [openRoomHighlight, setOpenRoomHighlight] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
   const [roomImageIndexes, setRoomImageIndexes] = useState<Record<string, number>>({});
@@ -177,6 +159,28 @@ export function HomePage() {
       description: siteConfig.seo.defaultDescription,
       keywords: ['location de bureaux à Rennes', 'bureaux à louer près de Rennes', 'bureaux privatifs près de Rennes'],
     });
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setDeskImageIndexes((current) => {
+        const next = {...current};
+
+        desks.forEach((desk) => {
+          if (desk.images.length <= 1) {
+            next[desk.id] = 0;
+            return;
+          }
+
+          const currentIndex = current[desk.id] ?? 0;
+          next[desk.id] = (currentIndex + 1) % desk.images.length;
+        });
+
+        return next;
+      });
+    }, 5000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -215,6 +219,24 @@ export function HomePage() {
 
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (sharedSpaces.length <= 1) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setSelectedSharedSpace((current) => {
+        const currentIndex = current?.index ?? 0;
+        const nextIndex = (currentIndex + 1) % sharedSpaces.length;
+        const [nextKey] = sharedSpaces[nextIndex];
+
+        return {key: nextKey, index: nextIndex};
+      });
+    }, 5000);
+
+    return () => window.clearInterval(interval);
+  }, [sharedSpaceCycleReset]);
 
   const scrollToReservation = () => {
     document.getElementById('reservation')?.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -268,38 +290,19 @@ export function HomePage() {
     setRoomCardSelections((current) => ({...current, [roomId]: nextSelection}));
   };
 
-  const handleSharedSpaceTap = (key: string, index: number) => {
-    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
-      setSelectedSharedSpace((current) =>
-        current?.key === key && current?.index === index ? null : {key, index},
-      );
-    }
+  const toggleRoomHighlight = (label: string) => {
+    setOpenRoomHighlight((current) => (current === label ? null : label));
   };
 
-  const sharedSpaces = Object.entries(galleryData);
-  const activeSharedSpaceState = hoveredSharedSpace ?? selectedSharedSpace;
+  const resetSharedSpaces = () => {
+    setSelectedSharedSpace(null);
+  };
+
+  const activeSharedSpaceState = selectedSharedSpace;
   const activeSharedSpace = activeSharedSpaceState ? galleryData[activeSharedSpaceState.key as keyof typeof galleryData] : null;
-  const displayedSharedSpaces = activeSharedSpaceState
-    ? getSharedSpaceImageOrder(activeSharedSpaceState.index).map((imageIndex, slotIndex) => ({
-        slotKey: `hover-slot-${slotIndex}`,
-        galleryKey: activeSharedSpaceState.key,
-        image: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].images.slice(0, 3)[imageIndex],
-        title: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].title,
-        summary: galleryData[activeSharedSpaceState.key as keyof typeof galleryData].summary,
-        isHoveredState: true,
-        slotIndex,
-        sourceSlotIndex: activeSharedSpaceState.index,
-      }))
-    : sharedSpaces.map(([key, gallery], index) => ({
-        slotKey: `base-slot-${index}`,
-        galleryKey: key,
-        image: gallery.images[0],
-        title: gallery.title,
-        summary: gallery.summary,
-        isHoveredState: false,
-        slotIndex: index,
-        sourceSlotIndex: index,
-      }));
+  const desktopSharedSpaceKey = (activeSharedSpaceState?.key ?? sharedSpaces[0]?.[0]) as keyof typeof galleryData;
+  const desktopSharedSpace = galleryData[desktopSharedSpaceKey];
+  const desktopSharedSpaceImages = desktopSharedSpace.images.slice(0, 3);
 
   return (
     <main className="relative overflow-hidden bg-white">
@@ -381,7 +384,7 @@ export function HomePage() {
                   whileInView={{opacity: 1, y: 0}}
                   viewport={{once: true}}
                   transition={{duration: 0.6, delay: 0.15 * index}}
-                  className={`relative h-[260px] overflow-hidden border border-primary/20 bg-[#f7f5ef] sm:h-[300px] md:h-[460px] ${
+                  className={`relative aspect-[196/460] overflow-hidden border border-primary/20 bg-[#f7f5ef] md:h-[460px] md:aspect-auto ${
                     index === 1
                       ? 'rounded-[0_3.75rem_0_3.75rem] md:rounded-[0_5.5rem_0_5.5rem]'
                       : 'rounded-[3.75rem_0_3.75rem_0] md:rounded-[5.5rem_0_5.5rem_0]'
@@ -391,6 +394,7 @@ export function HomePage() {
                     src={image.src}
                     alt={image.alt}
                     className="h-full w-full object-cover"
+                    style={'objectPosition' in image ? {objectPosition: image.objectPosition} : undefined}
                     referrerPolicy="no-referrer"
                     loading={index === 0 ? 'eager' : 'lazy'}
                     fetchPriority={index === 0 ? 'high' : 'auto'}
@@ -417,9 +421,9 @@ export function HomePage() {
 
       <section id="bureaux" className="scroll-mt-24 bg-primary py-32">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
-          <div className="mx-auto mb-14 max-w-3xl text-center md:mb-16">
+          <div className="mx-auto mb-14 max-w-3xl text-left md:mb-16 md:text-center">
             <div>
-              <h2 className="font-serif text-4xl font-black text-white md:text-5xl">Vos bureaux à louer</h2>
+              <h2 className="text-center font-serif text-4xl font-black text-white md:text-5xl">Vos bureaux à louer</h2>
               <p className="mt-5 text-base leading-relaxed text-white/80 md:mt-6 md:text-lg">
                 Des bureaux fermés, lumineux et immédiatement opérationnels pour toute recherche de
                 location de bureaux à Rennes, avec une implantation à Chartres-de-Bretagne, proche de Rennes.
@@ -446,7 +450,7 @@ export function HomePage() {
                       key={`${desk.id}-${image}`}
                       src={image}
                       alt={`${desk.name} ${index + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[2800ms] ease-in-out ${
                         index === (deskImageIndexes[desk.id] ?? 0) ? 'opacity-100' : 'opacity-0'
                       } ${!desk.available ? 'grayscale' : ''}`}
                       referrerPolicy="no-referrer"
@@ -484,10 +488,16 @@ export function HomePage() {
                 <div className="flex flex-1 flex-col p-6 md:p-8">
                   <h3 className="mb-5 font-serif text-[1.35rem] font-bold text-gray-900 sm:text-2xl">{desk.name}</h3>
                   <div className="mb-7 grid grid-cols-2 gap-x-2 gap-y-4 text-sm text-gray-700">
-                    <div className="flex items-center gap-2"><Maximize size={16} className="text-primary" /> {desk.size}</div>
-                    <div className="flex items-center gap-2"><Compass size={16} className="text-primary" /> {desk.orientation}</div>
-                    <div className="flex items-center gap-2"><Users size={16} className="text-primary" /> {desk.capacity}</div>
-                    <div className="flex items-center gap-2 font-bold text-gray-900"><Euro size={16} className="text-primary" /> {desk.price}</div>
+                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Maximize size={16} className="text-primary" /> <span>{desk.size}</span></div>
+                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Compass size={16} className="text-primary" /> <span>{desk.orientation}</span></div>
+                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Users size={16} className="text-primary" /> <span>{desk.capacity}</span></div>
+                    <div className="grid grid-cols-[16px_1fr] gap-x-2 pt-3.5">
+                      <Wallet size={16} className="text-primary" />
+                      <div>
+                        <div>{desk.price}</div>
+                        <div className="pt-1 text-xs font-medium text-gray-500">Charges comprises</div>
+                      </div>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -508,14 +518,14 @@ export function HomePage() {
 
       <section id="salles-reunions" className="overflow-hidden bg-gray-50 py-24 md:py-32">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
-          <div className="mb-16 text-center md:mb-24">
-            <h2 className="mb-6 font-serif text-4xl font-black text-gray-900 md:text-5xl">Salles de réunion</h2>
-            <p className="mx-auto mb-10 max-w-3xl text-base text-gray-600 md:mb-12 md:text-lg">
+          <div className="mb-16 text-left md:mb-24 md:text-center">
+            <h2 className="mb-6 text-center font-serif text-4xl font-black text-gray-900 md:text-5xl">Salles de réunion</h2>
+            <p className="mb-10 max-w-3xl text-base text-gray-600 md:mx-auto md:mb-12 md:text-lg">
               Des salles disponibles pour vos réunions, ateliers, formations et rendez-vous clients, dans un
               environnement professionnel et calme.
             </p>
 
-            <div className="flex flex-wrap justify-center gap-6 text-gray-700 md:gap-12">
+            <div className="flex flex-col items-center gap-4 text-gray-700 md:flex-row md:flex-wrap md:justify-center md:gap-12">
               <Feature icon={<Wifi size={24} />} label="Fibre haut débit" />
               <Feature icon={<Coffee size={24} />} label="Espace pause café" />
               <Feature icon={<Accessibility size={24} />} label="Accessibilité PMR" />
@@ -530,10 +540,6 @@ export function HomePage() {
               {label: 'Journée', price: room.priceDay},
             ];
             const roomCardSelection = roomCardSelections[room.id] ?? {mode: null, options: []};
-            const selectableOptions = getAvailableRoomOptions({
-              allOptions: room.options ?? [],
-              mode: roomCardSelection.mode,
-            });
             const compactBadges = [
               room.features[0]
                 ? {
@@ -631,10 +637,10 @@ export function HomePage() {
                     </div>
                   )}
                 </div>
-                <div className={`relative z-20 -mt-14 w-full rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl sm:-mt-20 sm:p-8 lg:mt-0 lg:w-1/2 lg:p-12 ${
+                <div className={`relative z-20 -mt-14 w-full rounded-3xl border border-gray-100 bg-white p-5 shadow-2xl sm:-mt-18 sm:p-7 lg:mt-0 lg:w-[44%] lg:p-8 xl:w-[42%] xl:p-9 ${
                   index % 2 === 0 ? 'lg:-ml-32' : 'lg:-mr-32'
                 }`}>
-                  <div className="mb-7 border-b border-gray-100 pb-7 md:mb-8 md:pb-8">
+                  <div className="mb-5 md:mb-6 lg:mb-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <h3 className="font-serif text-[1.8rem] font-black text-gray-900 sm:text-3xl">{room.name}</h3>
                       {room.surface ? (
@@ -644,7 +650,7 @@ export function HomePage() {
                     <p className="mt-4 text-sm leading-relaxed text-gray-600 sm:text-base">{room.description}</p>
                   </div>
 
-                  <div className="space-y-8">
+                  <div className="space-y-7 lg:space-y-6">
                     <div>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {roomRates.map((rate) => (
@@ -653,14 +659,9 @@ export function HomePage() {
                             type="button"
                             onClick={() => {
                               const mode = getRoomBookingMode(rate.label);
-                              const nextOptions = getAvailableRoomOptions({
-                                allOptions: room.options ?? [],
-                                mode,
-                              });
-
                               updateRoomCardSelection(room.id, {
                                 mode,
-                                options: roomCardSelection.options.filter((option) => nextOptions.includes(option)),
+                                options: [],
                               });
                             }}
                             className={`rounded-3xl border px-4 py-4 text-center transition-all sm:px-5 ${
@@ -694,58 +695,21 @@ export function HomePage() {
                     </div>
 
                     {room.options?.length ? (
-                      <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                        <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">Options</p>
-                        <div className="space-y-3">
+                      <div>
+                        <div className="space-y-2">
                           {room.options.map((option) => {
                             const [label, price] = option.split(':');
-                            const isSelectable = selectableOptions.includes(option);
-                            const isSelected = roomCardSelection.options.includes(option);
 
                             return (
-                              <button
+                              <div
                                 key={option}
-                                type="button"
-                                disabled={!isSelectable}
-                                onClick={() => {
-                                  if (!isSelectable) {
-                                    return;
-                                  }
-
-                                  updateRoomCardSelection(room.id, {
-                                    mode: roomCardSelection.mode,
-                                    options: isSelected
-                                      ? roomCardSelection.options.filter((item) => item !== option)
-                                      : [...roomCardSelection.options, option],
-                                  });
-                                }}
-                                className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
-                                  isSelected
-                                    ? 'border-primary bg-white shadow-sm'
-                                    : isSelectable
-                                      ? 'border-transparent bg-white/90 hover:border-primary/30'
-                                      : 'border-transparent bg-white/55 text-gray-400 opacity-60'
-                                }`}
+                                className="flex items-start justify-between gap-4 py-1 text-sm"
                               >
-                                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
-                                  <div className="flex items-start gap-3">
-                                    <CheckCircle2
-                                      size={18}
-                                      className={`mt-0.5 shrink-0 ${isSelectable ? 'text-primary' : 'text-gray-300'}`}
-                                    />
-                                    <span className={`text-sm font-medium leading-relaxed ${
-                                      isSelectable ? 'text-gray-800' : 'text-gray-400'
-                                    }`}>
-                                      {label.trim()}
-                                    </span>
-                                  </div>
-                                  <span className={`text-sm font-bold md:whitespace-nowrap ${
-                                    isSelectable ? 'text-gray-900' : 'text-gray-400'
-                                  }`}>
-                                    {price ? price.trim() : ''}
-                                  </span>
-                                </div>
-                              </button>
+                                <span className="leading-relaxed text-gray-800">{label.trim()}</span>
+                                {price ? (
+                                  <span className="shrink-0 font-bold text-gray-900">{price.trim()}</span>
+                                ) : null}
+                              </div>
                             );
                           })}
                         </div>
@@ -758,11 +722,9 @@ export function HomePage() {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="sm:min-h-[42px] sm:flex sm:flex-1 sm:items-center sm:pr-4">
                           <p className="min-h-[20px] text-sm leading-snug text-gray-500">
-                          {roomCardSelection.mode === 'hourly'
-                            ? 'Les options sont indisponibles pour une réservation à l’heure.'
-                            : roomCardSelection.mode === null
-                              ? 'Choisissez d’abord un tarif pour activer la réservation.'
-                              : ''}
+                          {roomCardSelection.mode === null
+                            ? 'Choisissez d’abord un tarif pour activer la réservation.'
+                            : ''}
                           </p>
                         </div>
                         <button
@@ -773,7 +735,6 @@ export function HomePage() {
                               reservationType: 'salle',
                               roomId: room.id,
                               roomBookingMode: roomCardSelection.mode ?? undefined,
-                              selectedRoomOptions: roomCardSelection.options,
                             });
                             scrollToReservation();
                           }}
@@ -794,9 +755,9 @@ export function HomePage() {
           })}
 
           <div className="mt-20 rounded-3xl border border-gray-200 bg-white p-6 shadow-xl sm:p-8 md:mt-24 md:p-10">
-            <div className="mb-10 text-center">
-              <h3 className="font-serif text-3xl font-black text-gray-900 md:text-4xl">Comparer les deux salles</h3>
-              <p className="mx-auto mt-4 max-w-3xl text-sm leading-relaxed text-gray-600 md:text-base">
+            <div className="mb-10 text-left md:text-center">
+              <h3 className="text-center font-serif text-3xl font-black text-gray-900 md:text-4xl">Comparer les deux salles</h3>
+              <p className="mt-4 max-w-3xl text-sm leading-relaxed text-gray-600 md:mx-auto md:text-base">
                 Un tableau simple pour comprendre les configurations possibles et choisir la salle la plus adaptée
                 à votre format de réunion.
               </p>
@@ -878,22 +839,55 @@ export function HomePage() {
 
             <div className="mt-8 space-y-4 md:hidden">
               {roomComparisonHighlights.map((item) => (
-                <div key={`mobile-highlight-${item.label}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                    <p className="text-sm font-bold text-gray-900">{item.label}</p>
-                  </div>
+                <div
+                  key={`mobile-highlight-${item.label}`}
+                  className="rounded-2xl border border-gray-200 bg-white shadow-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleRoomHighlight(item.label)}
+                    className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-4 text-left"
+                    aria-expanded={openRoomHighlight === item.label}
+                  >
+                    <span className="text-sm font-bold text-gray-900">{item.label}</span>
+                    <motion.span
+                      animate={{rotate: openRoomHighlight === item.label ? 45 : 0}}
+                      transition={{duration: 0.35, ease: [0.22, 1, 0.36, 1]}}
+                      className="text-lg font-semibold text-primary"
+                    >
+                      +
+                    </motion.span>
+                  </button>
 
-                  <div className="mt-3 grid gap-3">
-                    <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-gray-200">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">La Place</p>
-                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.atelier}</p>
-                    </div>
+                  <AnimatePresence initial={false}>
+                    {openRoomHighlight === item.label ? (
+                      <motion.div
+                        key={`room-highlight-panel-${item.label}`}
+                        initial={{height: 0, opacity: 0}}
+                        animate={{height: 'auto', opacity: 1}}
+                        exit={{height: 0, opacity: 0}}
+                        transition={{
+                          height: {duration: 0.48, ease: [0.22, 1, 0.36, 1]},
+                          opacity: {duration: 0.32, ease: 'easeOut'},
+                        }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-gray-200 px-4 py-4">
+                          <div className="grid gap-3">
+                            <div className="rounded-2xl bg-secondary px-4 py-4 ring-1 ring-primary/12">
+                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">La Place</p>
+                              <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.atelier}</p>
+                            </div>
 
-                    <div className="rounded-2xl bg-primary/[0.07] px-4 py-4 ring-1 ring-primary/12">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">L&apos;Annexe</p>
-                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.board}</p>
-                    </div>
-                  </div>
+                            <div className="rounded-2xl bg-secondary px-4 py-4 ring-1 ring-primary/12">
+                              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">L&apos;Annexe</p>
+                              <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.board}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>
@@ -952,143 +946,254 @@ export function HomePage() {
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-12">
           <div className="mb-14 text-center md:mb-20">
-            <h2 className="mb-6 font-serif text-4xl font-black md:text-5xl">Espaces partagés</h2>
-            <p className="mx-auto max-w-2xl text-base text-white/80 md:text-lg">
+            <h2 className="mb-6 text-center font-serif text-4xl font-black md:text-5xl">Espaces partagés</h2>
+            <p className="max-w-2xl text-base text-white/80 md:mx-auto md:text-lg">
               Des lieux de vie conçus pour favoriser les échanges, la créativité et la détente entre deux sessions de travail.
             </p>
           </div>
 
-          <div
-            className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8"
-            onMouseLeave={() => setHoveredSharedSpace(null)}
-          >
+          <div className="space-y-12 md:hidden">
             {sharedSpaces.map(([key, gallery], index) => {
-              const activeImage =
-                activeSharedSpaceState
-                  ? galleryData[activeSharedSpaceState.key as keyof typeof galleryData].images.slice(0, 3)[
-                      getSharedSpaceImageOrder(activeSharedSpaceState.index)[index]
-                    ]
-                  : null;
+              const marqueeImages = [...gallery.images.slice(0, 3), ...gallery.images.slice(0, 3)];
+              const marqueeDirectionClass = index % 2 === 1 ? 'shared-marquee-right' : 'shared-marquee-left';
+              const marqueeStyle = {
+                '--shared-marquee-duration': `${18 + index * 2}s`,
+                '--shared-marquee-gap': '0.9rem',
+              } as CSSProperties;
 
               return (
-                <div
-                  key={`shared-slot-${index}`}
-                  className="flex flex-col items-center text-center"
-                >
-                  <div className="mb-6 inline-block md:mb-8">
-                    <div
-                      className="relative h-[5.75rem] w-[5.75rem] sm:h-36 sm:w-36 md:h-64 md:w-64 lg:h-80 lg:w-80"
-                      onMouseEnter={() => {
-                        if (activeSharedSpaceState?.key !== key) {
-                          setHoveredSharedSpace({key, index});
-                        }
-                      }}
-                      onClick={() => handleSharedSpaceTap(key, index)}
-                    >
-                      <motion.div
-                        animate={{
-                          opacity: activeSharedSpaceState ? 0 : 1,
-                          scale: activeSharedSpaceState ? 0.985 : 1,
-                          filter: activeSharedSpaceState ? 'blur(8px)' : 'blur(0px)',
-                        }}
-                        transition={{
-                          opacity: {duration: 1.35, ease: [0.22, 1, 0.36, 1]},
-                          scale: {duration: 1.45, ease: [0.22, 1, 0.36, 1]},
-                          filter: {duration: 1.25, ease: [0.22, 1, 0.36, 1]},
-                        }}
-                        style={{
-                          borderRadius: sharedSpaceBaseRadii[index],
-                          clipPath: `inset(0 round ${sharedSpaceBaseRadii[index]})`,
-                        }}
-                        className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
-                      >
-                        <img
-                          src={gallery.images[0]}
-                          alt={gallery.title}
-                          className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
-                          style={{animationDelay: `${index * 0.18}s`, animationDuration: `${2.9 + index * 0.22}s`}}
-                          referrerPolicy="no-referrer"
-                          decoding="async"
-                        />
-                      </motion.div>
+                <article key={`shared-mobile-${key}`} className="mx-auto flex max-w-[24rem] flex-col items-center text-center">
+                  <div
+                    className="relative min-h-[18rem] w-full overflow-hidden py-1"
+                    style={{borderRadius: '9999px'}}
+                  >
+                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-primary via-primary/92 to-transparent" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-primary via-primary/92 to-transparent" />
 
-                      <AnimatePresence initial={false}>
-                        {activeSharedSpaceState && activeImage ? (
-                          <motion.div
-                            key={`shared-active-${activeSharedSpaceState.key}-${index}-${activeImage}`}
-                            initial={{opacity: 0, scale: 1.02, filter: 'blur(12px)'}}
-                            animate={{opacity: 1, scale: 1, filter: 'blur(0px)'}}
-                            exit={{opacity: 0, scale: 0.985, filter: 'blur(10px)'}}
-                            transition={{
-                              opacity: {duration: 1.45, ease: [0.22, 1, 0.36, 1]},
-                              scale: {duration: 1.6, ease: [0.22, 1, 0.36, 1]},
-                              filter: {duration: 1.3, ease: [0.22, 1, 0.36, 1]},
-                            }}
-                            style={{
-                              borderRadius: sharedSpaceBaseRadii[index],
-                              clipPath: `inset(0 round ${sharedSpaceBaseRadii[index]})`,
-                            }}
-                            className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
-                          >
-                            <img
-                              src={activeImage}
-                              alt={activeSharedSpace?.title ?? gallery.title}
-                              className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
-                              style={{animationDelay: `${index * 0.18}s`, animationDuration: `${2.9 + index * 0.22}s`}}
-                              referrerPolicy="no-referrer"
-                              decoding="async"
-                            />
-                          </motion.div>
-                        ) : null}
-                      </AnimatePresence>
+                    <div className={`shared-marquee-track ${marqueeDirectionClass} pl-4 pr-4`} style={marqueeStyle}>
+                      {marqueeImages.map((image, imageIndex) => (
+                        <div
+                          key={`${key}-mobile-marquee-${imageIndex}`}
+                          className="relative aspect-square w-[18rem] shrink-0 overflow-hidden shadow-2xl"
+                          style={{borderRadius: '9999px'}}
+                        >
+                          <img
+                            src={image}
+                            alt={`${gallery.title} - aperçu ${imageIndex + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                            decoding="async"
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {!activeSharedSpaceState ? (
-                    <motion.div
-                      initial={false}
-                      animate={{opacity: 1, y: 0}}
-                      transition={{duration: 0.48, ease: [0.25, 0.1, 0.25, 1]}}
-                      className="max-w-[260px]"
-                    >
-                      <h3 className="text-sm font-bold text-white sm:text-xl md:text-2xl">{gallery.title}</h3>
-                      <p className="mt-2 text-xs leading-relaxed text-white/75 sm:mt-3 sm:text-sm">{gallery.summary}</p>
-                    </motion.div>
-                  ) : (
-                    <div className="max-w-[260px] opacity-0">
-                      <h3 className="text-sm font-bold sm:text-xl md:text-2xl">.</h3>
-                      <p className="mt-2 text-xs leading-relaxed sm:mt-3 sm:text-sm">.</p>
-                    </div>
-                  )}
-                </div>
+                  <div className="mx-auto mt-6 max-w-[22rem]">
+                    <h3 className="text-2xl font-bold text-white">{gallery.title}</h3>
+                    <p className="mt-3 text-base leading-relaxed text-white/82">{gallery.summary}</p>
+                  </div>
+                </article>
               );
             })}
           </div>
 
-          <div className="mt-8 min-h-[84px] text-center md:mt-10 md:min-h-[112px]">
-            <AnimatePresence mode="wait">
+          <div className="hidden md:block">
+            <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
+              {sharedSpaces.map(([key, gallery], index) => {
+                const isActive = desktopSharedSpaceKey === key;
+                return (
+                  <button
+                    key={`shared-filter-${key}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSharedSpace({key, index});
+                      setSharedSpaceCycleReset((current) => current + 1);
+                    }}
+                    className={`group inline-flex items-center gap-3 rounded-full border px-5 py-3 text-left transition-colors ${
+                      isActive
+                        ? 'border-white/20 bg-white text-primary shadow-[0_18px_45px_rgba(255,255,255,0.18)]'
+                        : 'border-white/14 bg-white/8 text-white hover:border-white/20 hover:bg-white/14'
+                    }`}
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-current opacity-70" />
+                    <span className="text-sm font-semibold">{gallery.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid items-stretch gap-8 xl:grid-cols-[1.65fr_0.72fr]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`shared-desktop-visual-${desktopSharedSpaceKey}`}
+                  initial={{opacity: 0, y: 28, scale: 0.985}}
+                  animate={{opacity: 1, y: 0, scale: 1}}
+                  exit={{opacity: 0, y: -16, scale: 0.985}}
+                  transition={{duration: 0.55, ease: [0.22, 1, 0.36, 1]}}
+                  className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.95fr)]"
+                >
+                  <div className="relative min-h-[36rem] overflow-hidden rounded-[3rem] shadow-[0_38px_80px_rgba(3,18,61,0.28)]">
+                    <img
+                      src={desktopSharedSpaceImages[0]}
+                      alt={desktopSharedSpace.title}
+                      className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      decoding="async"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/85 backdrop-blur-md">
+                        {desktopSharedSpace.title}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-5">
+                    {desktopSharedSpaceImages.slice(1).map((image, imageIndex) => (
+                      <div
+                        key={`${desktopSharedSpaceKey}-detail-${image}`}
+                        className="relative min-h-[17.25rem] overflow-hidden rounded-[2.3rem] shadow-[0_28px_60px_rgba(3,18,61,0.22)]"
+                      >
+                        <img
+                          src={image}
+                          alt={`${desktopSharedSpace.title} - détail ${imageIndex + 2}`}
+                          className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                          referrerPolicy="no-referrer"
+                          decoding="async"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/22 via-transparent to-transparent" />
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              <AnimatePresence mode="wait">
+                <motion.aside
+                  key={`shared-desktop-copy-${desktopSharedSpaceKey}`}
+                  initial={{opacity: 0, x: 24}}
+                  animate={{opacity: 1, x: 0}}
+                  exit={{opacity: 0, x: -18}}
+                  transition={{duration: 0.45, ease: [0.22, 1, 0.36, 1]}}
+                  className="flex h-full flex-col rounded-[2.6rem] border border-white/12 bg-white/8 p-8 shadow-[0_28px_70px_rgba(3,18,61,0.14)] backdrop-blur-md"
+                >
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/55">Espace partagé</p>
+                    <h3 className="mt-4 font-serif text-4xl font-black leading-tight text-white">
+                      {desktopSharedSpace.title}
+                    </h3>
+                    <div className="mt-6">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/50">Ce que vous y trouvez</p>
+                      <div className="mt-4 flex flex-wrap gap-2.5">
+                      {desktopSharedSpace.services.map((service) => (
+                          <span
+                            key={`${desktopSharedSpaceKey}-${service}`}
+                            className="rounded-full border border-white/14 bg-white/10 px-4 py-2 text-sm font-medium text-white/82"
+                          >
+                            {service}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-5 text-base leading-relaxed text-white/78">
+                      {desktopSharedSpace.summary}
+                    </p>
+                  </div>
+                </motion.aside>
+              </AnimatePresence>
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setPrefill({reservationType: 'event'});
+                  scrollToReservation();
+                }}
+                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-sm font-bold text-primary shadow-[0_18px_45px_rgba(255,255,255,0.2)] transition-colors hover:bg-white/90"
+              >
+                Réserver un espace
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden">
+            <AnimatePresence mode="wait" initial={false}>
               {activeSharedSpace ? (
                 <motion.div
-                  key={activeSharedSpaceState?.key}
-                  initial={{opacity: 0, y: 18, scale: 0.98}}
+                  key={`shared-mobile-active-${activeSharedSpaceState?.key}`}
+                  initial={{opacity: 0, y: 16, scale: 0.98}}
                   animate={{opacity: 1, y: 0, scale: 1}}
-                  exit={{opacity: 0, y: 10, scale: 0.98}}
-                  transition={{duration: 0.6, ease: [0.16, 1, 0.3, 1]}}
+                  exit={{opacity: 0, y: 12, scale: 0.985}}
+                  transition={{duration: 0.45, ease: [0.16, 1, 0.3, 1]}}
+                  className="rounded-[2rem] border border-white/12 bg-white/10 p-6 shadow-[0_24px_60px_rgba(5,20,70,0.2)] backdrop-blur-xl"
                 >
-                  <h3 className="text-2xl font-bold text-white md:text-4xl">
-                    {activeSharedSpace.title}
-                  </h3>
-                  <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/75 md:text-base">
-                    {activeSharedSpace.summary}
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Mode découverte</p>
+                      <h3 className="mt-2 text-2xl font-bold text-white">{activeSharedSpace.title}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={resetSharedSpaces}
+                      className="inline-flex shrink-0 items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-base leading-relaxed text-white/82">
+                    Les trois images affichent différentes vues de ce même espace.
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    {[0, 1, 2].map((slot) => (
+                      <span
+                        key={`shared-space-dot-${slot}`}
+                        className="h-2.5 w-2.5 rounded-full bg-white/75"
+                        aria-hidden="true"
+                      />
+                    ))}
+                    <span className="ml-2 text-sm font-medium text-white/72">3 vues du même espace</span>
+                  </div>
+
+                  <p className="mt-5 text-base leading-relaxed text-white/92">{activeSharedSpace.summary}</p>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {activeSharedSpace.services.map((service) => (
+                      <span
+                        key={service}
+                        className="rounded-full border border-white/15 bg-white/12 px-3 py-2 text-sm font-medium text-white/82"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="shared-mobile-idle"
+                  initial={{opacity: 0, y: 14}}
+                  animate={{opacity: 1, y: 0}}
+                  exit={{opacity: 0, y: 10}}
+                  transition={{duration: 0.35, ease: [0.16, 1, 0.3, 1]}}
+                  className="rounded-[2rem] border border-white/10 bg-white/8 p-6 shadow-[0_24px_60px_rgba(5,20,70,0.16)] backdrop-blur-xl"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Mode découverte</p>
+                  <h3 className="mt-2 text-xl font-bold text-white">Touchez une photo pour explorer un espace</h3>
+                  <p className="mt-3 text-base leading-relaxed text-white/78">
+                    Chaque sélection affiche ensuite trois vues du même lieu pour mieux comprendre l’ambiance et les usages.
                   </p>
                 </motion.div>
-              ) : null}
+              )}
             </AnimatePresence>
           </div>
+
         </div>
       </section>
 
-      <section id="localisation" className="bg-gray-50 py-24 md:py-32">
+      <section id="localisation" className="bg-gray-50 pb-12 pt-24 md:py-32">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <div className="grid grid-cols-1 items-stretch gap-12 md:gap-16 lg:grid-cols-2">
             <motion.div
@@ -1097,7 +1202,7 @@ export function HomePage() {
               viewport={{once: true}}
               transition={{duration: 0.8}}
             >
-              <h2 className="mb-6 font-serif text-3xl font-black leading-[1.1] text-gray-900 md:mb-8 md:text-5xl">
+              <h2 className="mb-6 text-center font-serif text-3xl font-black leading-[1.1] text-gray-900 md:mb-8 md:text-left md:text-5xl">
                 Un emplacement stratégique
               </h2>
               <p className="mb-8 text-base text-gray-600 md:mb-10 md:text-lg">
@@ -1106,10 +1211,10 @@ export function HomePage() {
               </p>
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <LocationCard icon={<Car className="text-primary" size={28} />} title="Parking gratuit" description="Stationnement facile et gratuit pour vous et vos clients." />
-                <LocationCard icon={<MapPin className="text-primary" size={28} />} title="Accès rapide" description="À 5 minutes de la rocade (D177) et 10 min de Rennes centre." />
-                <LocationCard icon={<Coffee className="text-primary" size={28} />} title="Commerces" description="Boulangeries, restaurants à moins de 10 min à pied et food trucks à proximité." />
-                <LocationCard icon={<Info className="text-primary" size={28} />} title="Espaces verts" description="Parcs et chemins de balade à proximité pour s’aérer l’esprit." />
+                <LocationCard icon={<Car className="text-white md:text-primary" size={28} />} title="Parking gratuit" description="Stationnement facile et gratuit pour vous et vos clients." />
+                <LocationCard icon={<MapPin className="text-white md:text-primary" size={28} />} title="Accès rapide" description="À 5 minutes de la rocade (D177) et 10 min de Rennes centre." />
+                <LocationCard icon={<Coffee className="text-white md:text-primary" size={28} />} title="Commerces" description="Boulangeries, restaurants à moins de 10 min à pied et food trucks à proximité." />
+                <LocationCard icon={<Info className="text-white md:text-primary" size={28} />} title="Espaces verts" description="Parcs et chemins de balade à proximité pour s’aérer l’esprit." />
               </div>
             </motion.div>
 
@@ -1140,7 +1245,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[#f7f8f4] py-20 md:py-24">
+      <section className="bg-[#f7f8f4] pb-20 pt-12 md:py-24">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <div className="border-t border-b border-gray-200 py-10 md:py-12">
             <div className="grid grid-cols-1 gap-10 md:gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">
@@ -1150,22 +1255,22 @@ export function HomePage() {
               viewport={{once: true}}
               transition={{duration: 0.7}}
             >
-                <h2 className="mt-3 max-w-3xl font-serif text-3xl font-black leading-[1.08] text-gray-900 md:mt-4 md:text-5xl">
+                <h2 className="mt-3 max-w-3xl text-center font-serif text-3xl font-black leading-[1.08] text-gray-900 md:mt-4 md:text-left md:text-5xl">
                   Pourquoi l&apos;esquisse commune
                 </h2>
                 <div className="mt-5 max-w-3xl space-y-4 text-sm leading-relaxed text-gray-600 md:mt-6 md:space-y-5 md:text-base">
                   <p>
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Esquisse</span> : première étude d’une composition picturale, sculpturale ou architecturale, qui en trace les grandes lignes et sert de base à sa réalisation.
+                    <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">Esquisse</span> : première étude d’une composition picturale, sculpturale ou architecturale, qui en trace les grandes lignes et sert de base à sa réalisation.
                     <br />
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Commune</span> : ce qui se fait ensemble, à plusieurs, dans le partage et la mise en relation.
+                    <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">Commune</span> : ce qui se fait ensemble, à plusieurs, dans le partage et la mise en relation.
                   </p>
 
                   <p>
-                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse des liens humains. <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">Le collectif</span> y a toute sa place, sans jamais effacer le besoin d’intimité.
+                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse des liens humains. <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">Le collectif</span> y a toute sa place, sans jamais effacer le besoin d’intimité.
                   </p>
 
                   <p>
-                    Ici, chaque entrepreneur, indépendant ou petite entreprise, développe son activité à son rythme, dans son bureau fermé et privatif, tout en profitant d’espaces partagés pensés pour <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">se retrouver, collaborer et avancer</span> dans un environnement stimulant. L’esquisse commune est donc le lieu idéal si vous recherchez une location de bureaux à Rennes, en ayant accès à des salles de réunions et phonebox, alliant confort, proximité et partage.
+                    Ici, chaque entrepreneur, indépendant ou petite entreprise, développe son activité à son rythme, dans son bureau fermé et privatif, tout en profitant d’espaces partagés pensés pour <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">se retrouver, collaborer et avancer</span> dans un environnement stimulant. L’esquisse commune est donc le lieu idéal si vous recherchez une location de bureaux à Rennes, en ayant accès à des salles de réunions et phonebox, alliant confort, proximité et partage.
                   </p>
                 </div>
               </motion.div>
@@ -1188,7 +1293,7 @@ export function HomePage() {
 
                   <div className="flex-1 text-center md:text-left">
                     <h3 className="font-serif text-3xl font-black text-gray-900 md:text-4xl">Marika</h3>
-                    <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-600 md:mt-4 md:text-base">
+                    <p className="mt-3 max-w-md text-[14px] leading-relaxed text-gray-600 md:mt-4 md:text-[14px]">
                       Je suis à votre écoute pour vous présenter le lieu, comprendre votre activité et vous orienter
                       vers le bureau le plus adapté à vos besoins.
                     </p>
@@ -1233,8 +1338,8 @@ export function HomePage() {
 
       <section id="reservation" className="bg-primary py-24 md:py-32">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
-          <div className="mb-10 text-center md:mb-12">
-            <h2 className="font-serif text-3xl font-black text-white md:text-5xl">Demander une visite de bureau près de Rennes</h2>
+          <div className="mb-10 text-left md:mb-12 md:text-center">
+            <h2 className="text-center font-serif text-3xl font-black text-white md:text-5xl">Demander une visite de bureau près de Rennes</h2>
           </div>
 
           <div className="mx-auto max-w-6xl">
@@ -1269,21 +1374,21 @@ function HighlightCard({icon, title, description}: {icon: ReactNode; title: stri
 
 function Feature({icon, label}: {icon: ReactNode; label: string}) {
   return (
-    <div className="flex items-center gap-3 font-medium">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+    <div className="flex w-full flex-col items-center justify-center gap-3 text-center font-medium md:w-auto md:flex-row">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary">
         {icon}
       </div>
-      <span>{label}</span>
+      <span className="text-center">{label}</span>
     </div>
   );
 }
 
 function LocationCard({icon, title, description}: {icon: ReactNode; title: string; description: string}) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-primary/12 bg-secondary p-6 shadow-sm md:border-gray-100 md:bg-white">
       {icon}
       <h3 className="mb-2 mt-4 font-bold text-gray-900">{title}</h3>
-      <p className="flex-grow text-sm text-gray-500">{description}</p>
+      <p className="flex-grow text-sm text-primary md:text-gray-500">{description}</p>
     </div>
   );
 }

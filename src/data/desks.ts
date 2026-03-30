@@ -14,11 +14,11 @@ export const desks: Desk[] = [
   {
     id: 'aube',
     name: "Bureau \"Le Module\"",
-    image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=800",
+    image: "/desks/bureau-5-1.webp",
     images: [
-      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&q=80&w=1200"
+      "/desks/bureau-5-1.webp",
+      "/desks/bureau-5-2.webp",
+      "/gallery/cafet-6.webp"
     ],
     size: "12,6 m²",
     orientation: "Est",
@@ -29,11 +29,11 @@ export const desks: Desk[] = [
   {
     id: 'zenith',
     name: "Bureau \"L'Essor\"",
-    image: "https://images.unsplash.com/photo-1572025442646-866d16c84a54?auto=format&fit=crop&q=80&w=800",
+    image: "/desks/bureau-5-2.webp",
     images: [
-      "https://images.unsplash.com/photo-1572025442646-866d16c84a54?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200"
+      "/desks/bureau-5-2.webp",
+      "/desks/bureau-5-1.webp",
+      "/gallery/salon-4.webp"
     ],
     size: "13 m²",
     orientation: "Est",
@@ -44,11 +44,11 @@ export const desks: Desk[] = [
   {
     id: 'crepuscule',
     name: "Bureau \"Le Relief\"",
-    image: "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&q=80&w=800",
+    image: "/desks/bureau-6-1.webp",
     images: [
-      "https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&q=80&w=1200"
+      "/desks/bureau-6-1.webp",
+      "/desks/bureau-6-2.webp",
+      "/rooms/la-place-1.webp"
     ],
     size: "25 m²",
     orientation: "Nord-Est",

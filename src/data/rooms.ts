@@ -24,15 +24,15 @@ export const rooms: Room[] = [
   {
     id: 'atelier',
     name: "La Place",
-    image: "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&q=80&w=1200",
+    image: "/rooms/la-place-1.webp",
     images: [
-      "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200"
+      "/rooms/la-place-1.webp",
+      "/rooms/la-place-2.webp",
+      "/rooms/la-place-3.webp"
     ],
     priceHour: "25€",
     priceDay: "160€",
-    description: "Un espace ouvert et lumineux pour vos formations, ateliers et présentation publique.",
+    description: "Un espace ouvert et lumineux.",
     features: ["Jusqu'à 8 personnes", "Télévision 65 pouces, 4K, Airplay", "Espace pause café disponible"],
     surface: "15 m²",
     rates: [
@@ -47,15 +47,15 @@ export const rooms: Room[] = [
   {
     id: 'board',
     name: "L'Annexe",
-    image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200",
+    image: "/rooms/annexe-9.webp",
     images: [
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&q=80&w=1200"
+      "/rooms/annexe-9.webp",
+      "/rooms/annexe-2.webp",
+      "/rooms/annexe-3.webp"
     ],
     priceHour: "35€",
     priceDay: "210€",
-    description: "Un espace fermé et confidentiel pour vos formations, présentations clients et réunions d’équipe.",
+    description: "Un espace fermé et confidentiel.",
     features: ["Jusqu'à 8 personnes", "Système de vidéo-projecteur", "Espace pause café disponible"],
     surface: "16 m²",
     rates: [
