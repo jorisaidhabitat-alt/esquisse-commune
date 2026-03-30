@@ -28,8 +28,8 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-5 md:px-12">
-        <div className="hidden items-center gap-8 text-sm font-bold md:flex">
+      <div className="relative mx-auto flex max-w-[1400px] items-center px-6 py-5 md:px-12">
+        <div className="hidden flex-1 items-center gap-8 text-sm font-bold md:flex">
           {navLinks.slice(0, 2).map((link) => (
             <a key={link.href} href={link.href} className="transition-colors hover:text-primary">
               {link.label}
@@ -37,11 +37,14 @@ export function SiteHeader() {
           ))}
         </div>
 
-        <a href="/#hero" className="font-serif text-2xl font-black tracking-tight text-gray-900 md:text-3xl">
+        <a
+          href="/#hero"
+          className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl font-black tracking-tight text-gray-900 md:text-3xl"
+        >
           {siteConfig.brand}
         </a>
 
-        <div className="hidden items-center gap-8 text-sm font-bold md:flex">
+        <div className="hidden flex-1 items-center justify-end gap-8 text-sm font-bold md:flex">
           {navLinks.slice(2).map((link) => (
             <a
               key={link.href}
@@ -57,7 +60,7 @@ export function SiteHeader() {
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-gray-900 md:hidden"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 text-gray-900 md:hidden"
           aria-expanded={isOpen}
           aria-controls="mobile-navigation"
           aria-label={isOpen ? 'Fermer le menu' : 'Ouvrir le menu'}

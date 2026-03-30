@@ -61,6 +61,12 @@ button:disabled {
   100% { transform: scale(1); opacity: 0.8; }
 }
 
+@keyframes shared-space-breathe {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
 @keyframes shared-marquee-left {
   0% { transform: translate3d(0, 0, 0); }
   100% { transform: translate3d(calc(-50% - (var(--shared-marquee-gap, 1rem) / 2)), 0, 0); }
@@ -81,6 +87,17 @@ button:disabled {
 
 .animate-pulse-soft {
   animation: pulse-soft 4s ease-in-out infinite;
+}
+
+.shared-space-image-breathe {
+  will-change: transform;
+  transform-origin: center;
+}
+
+@media (max-width: 1023px) {
+  .shared-space-image-breathe {
+    animation: shared-space-breathe 3.1s ease-in-out infinite;
+  }
 }
 
 .shared-marquee-track {
@@ -128,6 +145,10 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .shared-marquee-left,
   .shared-marquee-right {
+    animation: none;
+  }
+
+  .shared-space-image-breathe {
     animation: none;
   }
 }

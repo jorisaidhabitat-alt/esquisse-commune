@@ -22,7 +22,7 @@ export const galleryData = {
     services: ['Canapés modulables', 'Baby-foot', 'Bibliothèque partagée', 'Plantes purifiantes', 'Lumière tamisée'],
     images: [
       '/gallery/salon-4.webp',
-      '/gallery/salon-2.webp',
+      '/gallery/salon-3.webp',
       '/gallery/salon-1.webp',
     ],
   },

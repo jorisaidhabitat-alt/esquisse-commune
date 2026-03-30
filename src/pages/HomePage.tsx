@@ -17,7 +17,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
-import type {CSSProperties, ComponentType, ReactNode, TouchEvent} from 'react';
+import type {ComponentType, ReactNode, TouchEvent} from 'react';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {desks} from '../data/desks';
 import {galleryData} from '../data/gallery';
@@ -138,12 +138,12 @@ function getSharedSpaceMotionOffset(slotIndex: number, sourceIndex: number) {
     return '0px';
   }
 
-  return `calc(${sourceIndex - slotIndex} * (100% + 2rem))`;
+  return `${(sourceIndex - slotIndex) * 26}px`;
 }
 
 export function HomePage() {
   const [hoveredSharedSpace, setHoveredSharedSpace] = useState<{key: string; index: number} | null>(null);
-  const [pausedSharedSpaceRail, setPausedSharedSpaceRail] = useState<string | null>(null);
+  const [selectedSharedSpace, setSelectedSharedSpace] = useState<{key: string; index: number} | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
   const [roomImageIndexes, setRoomImageIndexes] = useState<Record<string, number>>({});
@@ -268,8 +268,16 @@ export function HomePage() {
     setRoomCardSelections((current) => ({...current, [roomId]: nextSelection}));
   };
 
+  const handleSharedSpaceTap = (key: string, index: number) => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+      setSelectedSharedSpace((current) =>
+        current?.key === key && current?.index === index ? null : {key, index},
+      );
+    }
+  };
+
   const sharedSpaces = Object.entries(galleryData);
-  const activeSharedSpaceState = hoveredSharedSpace;
+  const activeSharedSpaceState = hoveredSharedSpace ?? selectedSharedSpace;
   const activeSharedSpace = activeSharedSpaceState ? galleryData[activeSharedSpaceState.key as keyof typeof galleryData] : null;
   const displayedSharedSpaces = activeSharedSpaceState
     ? getSharedSpaceImageOrder(activeSharedSpaceState.index).map((imageIndex, slotIndex) => ({
@@ -794,7 +802,41 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-gray-200">
+            <div className="space-y-4 md:hidden">
+              {roomComparisonLayouts.map((layout) => (
+                <div key={`mobile-layout-${layout.id}`} className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
+                      <RoomLayoutIcon layout={layout.id} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">{layout.label}</p>
+                      <p className="mt-1 text-sm text-gray-600">Capacité selon cette configuration</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3">
+                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-4 shadow-sm">
+                      <div>
+                        <p className="font-serif text-lg font-black text-gray-900">La Place</p>
+                        <p className="text-sm text-gray-500">Ouverte, lumineuse</p>
+                      </div>
+                      <p className="text-2xl font-black text-gray-900">{layout.capacities.atelier}</p>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-2xl bg-primary/[0.07] px-4 py-4 shadow-sm">
+                      <div>
+                        <p className="font-serif text-lg font-black text-gray-900">L&apos;Annexe</p>
+                        <p className="text-sm text-gray-500">Fermée, confidentielle</p>
+                      </div>
+                      <p className="text-2xl font-black text-primary">{layout.capacities.board}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-hidden rounded-3xl border border-gray-200 md:block">
               <div className="grid grid-cols-[1.1fr_repeat(3,minmax(0,1fr))] border-b border-gray-200 bg-gray-50">
                 <div className="px-4 py-5 sm:px-6" />
                 {roomComparisonLayouts.map((layout) => (
@@ -834,7 +876,29 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-3xl border border-gray-200">
+            <div className="mt-8 space-y-4 md:hidden">
+              {roomComparisonHighlights.map((item) => (
+                <div key={`mobile-highlight-${item.label}`} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="rounded-2xl bg-gray-50 px-4 py-3">
+                    <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                  </div>
+
+                  <div className="mt-3 grid gap-3">
+                    <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-gray-200">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">La Place</p>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.atelier}</p>
+                    </div>
+
+                    <div className="rounded-2xl bg-primary/[0.07] px-4 py-4 ring-1 ring-primary/12">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">L&apos;Annexe</p>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.board}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 hidden overflow-hidden rounded-3xl border border-gray-200 md:block">
               <div className="hidden bg-gray-50 md:grid md:grid-cols-[0.8fr_1fr_1fr]">
                 <div className="border-r border-gray-200 px-4 py-4 md:px-6" />
                 <div className="border-r border-gray-200 px-4 py-4 text-center md:px-6">
@@ -894,179 +958,114 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="space-y-10 lg:hidden">
+          <div
+            className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8"
+            onMouseLeave={() => setHoveredSharedSpace(null)}
+          >
             {sharedSpaces.map(([key, gallery], index) => {
-              const loopingImages = [...gallery.images, ...gallery.images];
-              const isPaused = pausedSharedSpaceRail === key;
-              const marqueeStyle = {
-                '--shared-marquee-duration': `${34 + index * 3}s`,
-                '--shared-marquee-gap': '0.875rem',
-              } as CSSProperties;
+              const activeImage =
+                activeSharedSpaceState
+                  ? galleryData[activeSharedSpaceState.key as keyof typeof galleryData].images.slice(0, 3)[
+                      getSharedSpaceImageOrder(activeSharedSpaceState.index)[index]
+                    ]
+                  : null;
 
               return (
-                <div key={key} className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-2xl font-bold text-white">{gallery.title}</h3>
-                    <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/75">
-                      {gallery.summary}
-                    </p>
-                  </div>
-
-                  <div
-                    className="relative overflow-hidden py-1"
-                    onTouchStart={() => setPausedSharedSpaceRail(key)}
-                    onTouchEnd={() => setPausedSharedSpaceRail((current) => (current === key ? null : current))}
-                    onTouchCancel={() => setPausedSharedSpaceRail((current) => (current === key ? null : current))}
-                  >
-                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-primary via-primary/90 to-transparent" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-primary via-primary/90 to-transparent" />
-
+                <div
+                  key={`shared-slot-${index}`}
+                  className="flex flex-col items-center text-center"
+                >
+                  <div className="mb-6 inline-block md:mb-8">
                     <div
-                      className={`shared-marquee-track ${index % 2 === 1 ? 'shared-marquee-right' : 'shared-marquee-left'} ${isPaused ? 'shared-marquee-paused' : ''}`}
-                      style={marqueeStyle}
+                      className="relative h-[5.75rem] w-[5.75rem] sm:h-36 sm:w-36 md:h-64 md:w-64 lg:h-80 lg:w-80"
+                      onMouseEnter={() => {
+                        if (activeSharedSpaceState?.key !== key) {
+                          setHoveredSharedSpace({key, index});
+                        }
+                      }}
+                      onClick={() => handleSharedSpaceTap(key, index)}
                     >
-                      {loopingImages.map((image, imageIndex) => (
-                        <div
-                          key={`${key}-${imageIndex}`}
-                          style={{borderRadius: sharedSpaceBaseRadii[index]}}
-                          className="relative h-40 w-52 flex-none overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)] sm:h-44 sm:w-60"
-                        >
-                          <img
-                            src={image}
-                            alt={gallery.title}
-                            className="h-full w-full object-cover"
-                            referrerPolicy="no-referrer"
-                            decoding="async"
-                          />
-                        </div>
-                      ))}
+                      <motion.div
+                        animate={{
+                          opacity: activeSharedSpaceState ? 0 : 1,
+                          scale: activeSharedSpaceState ? 0.985 : 1,
+                          filter: activeSharedSpaceState ? 'blur(8px)' : 'blur(0px)',
+                        }}
+                        transition={{
+                          opacity: {duration: 1.35, ease: [0.22, 1, 0.36, 1]},
+                          scale: {duration: 1.45, ease: [0.22, 1, 0.36, 1]},
+                          filter: {duration: 1.25, ease: [0.22, 1, 0.36, 1]},
+                        }}
+                        style={{
+                          borderRadius: sharedSpaceBaseRadii[index],
+                          clipPath: `inset(0 round ${sharedSpaceBaseRadii[index]})`,
+                        }}
+                        className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
+                      >
+                        <img
+                          src={gallery.images[0]}
+                          alt={gallery.title}
+                          className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                          style={{animationDelay: `${index * 0.18}s`, animationDuration: `${2.9 + index * 0.22}s`}}
+                          referrerPolicy="no-referrer"
+                          decoding="async"
+                        />
+                      </motion.div>
+
+                      <AnimatePresence initial={false}>
+                        {activeSharedSpaceState && activeImage ? (
+                          <motion.div
+                            key={`shared-active-${activeSharedSpaceState.key}-${index}-${activeImage}`}
+                            initial={{opacity: 0, scale: 1.02, filter: 'blur(12px)'}}
+                            animate={{opacity: 1, scale: 1, filter: 'blur(0px)'}}
+                            exit={{opacity: 0, scale: 0.985, filter: 'blur(10px)'}}
+                            transition={{
+                              opacity: {duration: 1.45, ease: [0.22, 1, 0.36, 1]},
+                              scale: {duration: 1.6, ease: [0.22, 1, 0.36, 1]},
+                              filter: {duration: 1.3, ease: [0.22, 1, 0.36, 1]},
+                            }}
+                            style={{
+                              borderRadius: sharedSpaceBaseRadii[index],
+                              clipPath: `inset(0 round ${sharedSpaceBaseRadii[index]})`,
+                            }}
+                            className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
+                          >
+                            <img
+                              src={activeImage}
+                              alt={activeSharedSpace?.title ?? gallery.title}
+                              className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                              style={{animationDelay: `${index * 0.18}s`, animationDuration: `${2.9 + index * 0.22}s`}}
+                              referrerPolicy="no-referrer"
+                              decoding="async"
+                            />
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
                     </div>
                   </div>
+
+                  {!activeSharedSpaceState ? (
+                    <motion.div
+                      initial={false}
+                      animate={{opacity: 1, y: 0}}
+                      transition={{duration: 0.48, ease: [0.25, 0.1, 0.25, 1]}}
+                      className="max-w-[260px]"
+                    >
+                      <h3 className="text-sm font-bold text-white sm:text-xl md:text-2xl">{gallery.title}</h3>
+                      <p className="mt-2 text-xs leading-relaxed text-white/75 sm:mt-3 sm:text-sm">{gallery.summary}</p>
+                    </motion.div>
+                  ) : (
+                    <div className="max-w-[260px] opacity-0">
+                      <h3 className="text-sm font-bold sm:text-xl md:text-2xl">.</h3>
+                      <p className="mt-2 text-xs leading-relaxed sm:mt-3 sm:text-sm">.</p>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <div
-            className="hidden grid-cols-1 gap-10 md:grid-cols-3 md:gap-8 lg:grid"
-            onMouseLeave={() => setHoveredSharedSpace(null)}
-          >
-            {displayedSharedSpaces.map((space, index) => (
-              <div
-                key={`shared-slot-${index}-${activeSharedSpaceState?.key ?? 'base'}-${activeSharedSpaceState?.index ?? 'base'}`}
-                className="flex flex-col items-center text-center"
-              >
-                <div className="mb-6 inline-block md:mb-8">
-                  <div className="relative h-56 w-56 sm:h-64 sm:w-64 md:h-80 md:w-80">
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.div
-                        key={`shared-image-${index}-${space.galleryKey}-${space.image}-${space.isHoveredState ? 'hover' : 'base'}`}
-                        initial={space.isHoveredState
-                          ? {
-                              opacity: space.slotIndex === space.sourceSlotIndex ? 1 : 0.04,
-                              scale: space.slotIndex === space.sourceSlotIndex ? 1 : 0.988,
-                              x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
-                              filter: space.slotIndex === space.sourceSlotIndex ? 'blur(0px)' : 'blur(6px)',
-                            }
-                          : {
-                              opacity: 1,
-                              scale: 1,
-                            }}
-                        animate={{opacity: 1, scale: 1, x: 0, filter: 'blur(0px)'}}
-                        exit={space.isHoveredState
-                          ? {
-                              opacity: space.slotIndex === space.sourceSlotIndex ? 0.94 : 0.56,
-                              scale: space.slotIndex === space.sourceSlotIndex ? 0.998 : 0.972,
-                              x: getSharedSpaceMotionOffset(space.slotIndex, space.sourceSlotIndex),
-                              filter: space.slotIndex === space.sourceSlotIndex ? 'blur(0px)' : 'blur(3px)',
-                              transition: space.slotIndex === space.sourceSlotIndex
-                                ? {
-                                    opacity: {duration: 0.62, ease: [0.16, 1, 0.3, 1]},
-                                    scale: {duration: 0.72, ease: [0.16, 1, 0.3, 1]},
-                                    x: {duration: 0.78, ease: [0.16, 1, 0.3, 1]},
-                                    filter: {duration: 0.52, ease: [0.16, 1, 0.3, 1]},
-                                  }
-                                : {
-                                    opacity: {duration: 2.2, ease: [0.16, 1, 0.3, 1]},
-                                    scale: {duration: 2.35, ease: [0.16, 1, 0.3, 1]},
-                                    x: {duration: 2.65, ease: [0.16, 1, 0.3, 1]},
-                                    filter: {duration: 1.95, ease: [0.16, 1, 0.3, 1]},
-                                  },
-                            }
-                          : {
-                              opacity: 1,
-                              scale: 1,
-                            }}
-                        transition={{
-                          opacity: {
-                            duration: space.slotIndex === space.sourceSlotIndex ? 0.58 : 2.35,
-                            ease: [0.16, 1, 0.3, 1],
-                            delay: space.slotIndex === space.sourceSlotIndex ? 0 : 0.18,
-                          },
-                          scale: {
-                            duration: space.slotIndex === space.sourceSlotIndex ? 0.62 : 2.45,
-                            ease: [0.16, 1, 0.3, 1],
-                          },
-                          x: {
-                            duration: space.slotIndex === space.sourceSlotIndex ? 0.68 : 2.8,
-                            ease: [0.16, 1, 0.3, 1],
-                          },
-                          filter: {
-                            duration: space.slotIndex === space.sourceSlotIndex ? 0.48 : 2.1,
-                            ease: [0.16, 1, 0.3, 1],
-                            delay: space.slotIndex === space.sourceSlotIndex ? 0 : 0.12,
-                          },
-                        }}
-                        onMouseEnter={() => {
-                          if (!space.isHoveredState) {
-                            setHoveredSharedSpace({key: space.galleryKey, index});
-                          }
-                        }}
-                        onMouseLeave={() => setHoveredSharedSpace(null)}
-                        style={{
-                          borderRadius: activeSharedSpaceState
-                            ? sharedSpaceBaseRadii[space.sourceSlotIndex]
-                            : sharedSpaceBaseRadii[index],
-                          clipPath: activeSharedSpaceState
-                            ? `inset(0 round ${sharedSpaceBaseRadii[space.sourceSlotIndex]})`
-                            : `inset(0 round ${sharedSpaceBaseRadii[index]})`,
-                          zIndex: space.isHoveredState && space.slotIndex === space.sourceSlotIndex ? 3 : 1,
-                        }}
-                        className="absolute inset-0 overflow-hidden shadow-2xl [transform:translateZ(0)] isolation-isolate [-webkit-mask-image:-webkit-radial-gradient(white,black)]"
-                      >
-                        <img
-                          src={space.image}
-                          alt={space.title}
-                          className="absolute inset-0 h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                          decoding="async"
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {!activeSharedSpaceState ? (
-                  <motion.div
-                    initial={false}
-                    animate={{opacity: 1, y: 0}}
-                    transition={{duration: 0.48, ease: [0.25, 0.1, 0.25, 1]}}
-                    className="max-w-[260px]"
-                  >
-                    <h3 className="text-xl font-bold text-white sm:text-2xl">{space.title}</h3>
-                    <p className="mt-3 text-sm leading-relaxed text-white/75">{space.summary}</p>
-                  </motion.div>
-                ) : (
-                  <div className="max-w-[260px] opacity-0">
-                    <h3 className="text-xl font-bold sm:text-2xl">.</h3>
-                    <p className="mt-3 text-sm leading-relaxed">.</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 hidden min-h-[84px] text-center md:mt-10 md:min-h-[112px] lg:block">
+          <div className="mt-8 min-h-[84px] text-center md:mt-10 md:min-h-[112px]">
             <AnimatePresence mode="wait">
               {activeSharedSpace ? (
                 <motion.div
