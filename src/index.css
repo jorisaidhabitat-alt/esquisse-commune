@@ -95,12 +95,6 @@ button:disabled {
   transform-origin: center;
 }
 
-@media (max-width: 1023px) {
-  .shared-space-image-breathe {
-    animation: shared-space-breathe 3.1s ease-in-out infinite;
-  }
-}
-
 .mobile-accordion-content {
   display: grid;
   grid-template-rows: 0fr;

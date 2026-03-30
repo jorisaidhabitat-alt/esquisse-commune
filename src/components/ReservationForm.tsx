@@ -148,6 +148,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   const [roomHalfDaySlot, setRoomHalfDaySlot] = useState<HalfDaySlot | null>(null);
   const [selectedRoomOptions, setSelectedRoomOptions] = useState<string[]>([]);
   const [contact, setContact] = useState<ContactPayload>(initialContactState);
+  const [showMobileRoomContactStep, setShowMobileRoomContactStep] = useState(false);
   const [submitState, setSubmitState] = useState<{
     status: 'idle' | 'submitting' | 'success' | 'error';
     message: string;
@@ -304,6 +305,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     });
   }, [availableRoomOptions]);
 
+  useEffect(() => {
+    if (reservationType === 'salle' && formStep === 5 && !isDesktop) {
+      setShowMobileRoomContactStep(false);
+    }
+  }, [formStep, isDesktop, reservationType]);
+
   const selectedOfferLabel =
     reservationType === 'bureau'
       ? selectedDesk?.name ?? 'Bureau privé'
@@ -329,6 +336,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     (reservationType === 'salle' && formStep === 4) ||
     (reservationType === 'salle' && formStep === 5) ||
     (reservationType !== 'salle' && formStep === 4);
+  const isMobileRoomContactFlow = reservationType === 'salle' && !isDesktop;
 
   const submitLabel =
     reservationType === 'bureau'
@@ -542,11 +550,11 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               <div className="mb-6">
                 <h3 className="text-base font-bold text-gray-900">Choisissez votre demande</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                  Sélectionnez le type d’espace ou de demande que vous souhaitez nous envoyer.
+                  Sélectionnez le type d’espace que vous souhaitez nous envoyer.
                 </p>
               </div>
 
-              <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <OfferButton
                   active={reservationType === 'bureau'}
                   image="/desks/bureau-6-1.webp"
@@ -560,14 +568,6 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                   title="Salle de réunion"
                   description="Réservation à l’heure pour vos rendez-vous, ateliers et comités."
                   onClick={() => handleTypeSelect('salle')}
-                />
-                <OfferButton
-                  active={reservationType === 'event'}
-                  image="/gallery/salon-4.webp"
-                  title="Événement d'entreprise"
-                  description={isEventReservationAvailable ? "Configuration à l’heure avec espaces partagés et accompagnement." : 'Actuellement indisponible'}
-                  disabled={!isEventReservationAvailable}
-                  onClick={() => handleTypeSelect('event')}
                 />
               </div>
 
@@ -816,7 +816,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                       </div>
                     </div>
 
-                    {roomBookingMode && selectedRoomIncluded ? (
+                    {isDesktop && roomBookingMode && selectedRoomIncluded ? (
                       <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
                         <p className="text-xs font-bold uppercase tracking-wider text-primary/80">Inclus dans cette formule</p>
                         <p className="mt-2 text-sm font-semibold text-gray-900">{selectedRoomIncluded}</p>
@@ -893,7 +893,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               </div>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="hidden h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:flex">
                   <div className="mb-4 flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 shrink-0 text-primary" size={18} />
                     <div>
@@ -926,7 +926,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     </div>
                   ) : null}
 
-                  <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="mt-3">
                     <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Prix estimatif</p>
                     <div className="mt-3 space-y-2">
                       <div className="flex items-baseline justify-between gap-3 text-sm font-semibold text-gray-900">
@@ -1240,7 +1240,14 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               <div className="mb-4 flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setFormStep(reservationType === 'salle' ? 4 : 3)}
+                  onClick={() => {
+                    if (reservationType === 'salle' && !isDesktop && showMobileRoomContactStep) {
+                      setShowMobileRoomContactStep(false);
+                      return;
+                    }
+
+                    setFormStep(reservationType === 'salle' ? 4 : 3);
+                  }}
                   className="text-gray-400 transition-colors hover:text-black"
                   aria-label="Revenir à l'étape précédente"
                 >
@@ -1299,8 +1306,26 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-                  <div className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className={`grid grid-cols-1 gap-4 ${isMobileRoomContactFlow ? '' : 'xl:grid-cols-[0.95fr_1.05fr]'}`}>
+                  <motion.div
+                    initial={false}
+                    animate={isMobileRoomContactFlow
+                      ? {
+                          opacity: showMobileRoomContactStep ? 0 : 1,
+                          x: showMobileRoomContactStep ? -20 : 0,
+                          height: showMobileRoomContactStep ? 0 : 'auto',
+                        }
+                      : {
+                          opacity: 1,
+                          x: 0,
+                          height: 'auto',
+                        }}
+                    transition={{duration: 0.25}}
+                    className={`flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${
+                      isMobileRoomContactFlow ? 'overflow-hidden' : 'h-full'
+                    } ${isMobileRoomContactFlow && showMobileRoomContactStep ? 'pointer-events-none border-transparent p-0 shadow-none' : ''}`}
+                    aria-hidden={isMobileRoomContactFlow && showMobileRoomContactStep}
+                  >
                     <div className="mb-4 flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 shrink-0 text-primary" size={18} />
                       <div>
@@ -1312,8 +1337,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     </div>
 
                     {reservationType === 'salle' && selectedRoom ? (
-                      <div className="mb-4 flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                        <div className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl">
+                      <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-start">
+                        <div className="h-48 w-full shrink-0 overflow-hidden rounded-2xl sm:h-28 sm:w-28">
                           <img
                             src={selectedRoom.image}
                             alt={selectedRoom.name}
@@ -1377,8 +1402,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     )}
 
                     {reservationType === 'salle' ? (
-                      <div className="mt-3 space-y-3">
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="mt-3 space-y-3">
+                        <div>
                           <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Prix estimatif</p>
                           <div className="mt-3 space-y-2">
                             <div className="flex items-baseline justify-between gap-3 text-sm font-semibold text-gray-900">
@@ -1419,11 +1444,39 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                             <span className="text-base font-bold text-primary">{formatEuroAmount(selectedRoomTotalTtc)} € TTC</span>
                           </div>
                         </div>
+
+                        {!isDesktop ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowMobileRoomContactStep(true)}
+                            className="mt-6 w-full rounded-xl bg-primary py-4 text-sm font-bold text-white shadow-md transition-colors hover:bg-primary/90"
+                          >
+                            Confirmer la demande
+                          </button>
+                        ) : null}
                       </div>
                     ) : null}
-                  </div>
+                  </motion.div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <motion.div
+                    initial={false}
+                    animate={isMobileRoomContactFlow
+                      ? {
+                          opacity: showMobileRoomContactStep ? 1 : 0,
+                          x: showMobileRoomContactStep ? 0 : 20,
+                          height: showMobileRoomContactStep ? 'auto' : 0,
+                        }
+                      : {
+                          opacity: 1,
+                          x: 0,
+                          height: 'auto',
+                        }}
+                    transition={{duration: 0.25}}
+                    className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${
+                      isMobileRoomContactFlow ? 'overflow-hidden' : ''
+                    } ${isMobileRoomContactFlow && !showMobileRoomContactStep ? 'pointer-events-none border-transparent p-0 shadow-none' : ''}`}
+                    aria-hidden={isMobileRoomContactFlow && !showMobileRoomContactStep}
+                  >
                     <div className="mb-4">
                       <h4 className="text-sm font-bold text-gray-900">Coordonnées</h4>
                       <p className="mt-1 text-sm leading-relaxed text-gray-500">
@@ -1511,7 +1564,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     >
                       {submitState.status === 'submitting' ? 'Envoi en cours…' : submitLabel}
                     </button>
-                  </div>
+                  </motion.div>
                 </div>
               </form>
             )}

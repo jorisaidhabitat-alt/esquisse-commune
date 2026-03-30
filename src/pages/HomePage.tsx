@@ -125,6 +125,7 @@ const sharedSpaces = Object.entries(galleryData);
 export function HomePage() {
   const [selectedSharedSpace, setSelectedSharedSpace] = useState<{key: string; index: number} | null>(null);
   const [sharedSpaceCycleReset, setSharedSpaceCycleReset] = useState(0);
+  const [isSharedSpacesDesktop, setIsSharedSpacesDesktop] = useState(false);
   const [openRoomHighlight, setOpenRoomHighlight] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
@@ -221,7 +222,19 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (sharedSpaces.length <= 1) {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const syncSharedSpacesViewport = (event?: MediaQueryListEvent) => {
+      setIsSharedSpacesDesktop(event?.matches ?? mediaQuery.matches);
+    };
+
+    syncSharedSpacesViewport();
+    mediaQuery.addEventListener('change', syncSharedSpacesViewport);
+
+    return () => mediaQuery.removeEventListener('change', syncSharedSpacesViewport);
+  }, []);
+
+  useEffect(() => {
+    if (sharedSpaces.length <= 1 || !isSharedSpacesDesktop) {
       return;
     }
 
@@ -236,7 +249,7 @@ export function HomePage() {
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [sharedSpaceCycleReset]);
+  }, [isSharedSpacesDesktop, sharedSpaceCycleReset]);
 
   const scrollToReservation = () => {
     document.getElementById('reservation')?.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -450,7 +463,7 @@ export function HomePage() {
                       key={`${desk.id}-${image}`}
                       src={image}
                       alt={`${desk.name} ${index + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[2800ms] ease-in-out ${
+                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 ease-out sm:duration-[2800ms] sm:ease-in-out ${
                         index === (deskImageIndexes[desk.id] ?? 0) ? 'opacity-100' : 'opacity-0'
                       } ${!desk.available ? 'grayscale' : ''}`}
                       referrerPolicy="no-referrer"
@@ -637,17 +650,17 @@ export function HomePage() {
                     </div>
                   )}
                 </div>
-                <div className={`relative z-20 -mt-14 w-full rounded-3xl border border-gray-100 bg-white p-5 shadow-2xl sm:-mt-18 sm:p-7 lg:mt-0 lg:w-[44%] lg:p-8 xl:w-[42%] xl:p-9 ${
+                <div className={`relative z-20 mt-4 w-full rounded-3xl border border-gray-100 bg-white p-5 shadow-2xl sm:-mt-11 sm:p-7 lg:mt-0 lg:w-[44%] lg:p-8 xl:w-[42%] xl:p-9 ${
                   index % 2 === 0 ? 'lg:-ml-32' : 'lg:-mr-32'
                 }`}>
                   <div className="mb-5 md:mb-6 lg:mb-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-start justify-between gap-4">
                       <h3 className="font-serif text-[1.8rem] font-black text-gray-900 sm:text-3xl">{room.name}</h3>
                       {room.surface ? (
-                        <p className="text-sm font-medium text-gray-500 sm:pt-2">{room.surface}</p>
+                        <p className="pt-1 text-sm font-medium text-gray-500 sm:pt-2">{room.surface}</p>
                       ) : null}
                     </div>
-                    <p className="mt-4 text-sm leading-relaxed text-gray-600 sm:text-base">{room.description}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:mt-4 sm:text-base">{room.description}</p>
                   </div>
 
                   <div className="space-y-7 lg:space-y-6">
@@ -664,30 +677,32 @@ export function HomePage() {
                                 options: [],
                               });
                             }}
-                            className={`rounded-3xl border px-4 py-4 text-center transition-all sm:px-5 ${
+                            className={`rounded-3xl border px-4 py-3 text-left transition-all sm:px-5 sm:py-4 sm:text-center ${
                               roomCardSelection.mode === getRoomBookingMode(rate.label)
                                 ? 'border-primary bg-primary text-white shadow-md'
                                 : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
                             }`}
                           >
-                            <p className={`text-xs font-bold uppercase tracking-[0.16em] ${
-                              roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white/75' : 'text-gray-500'
-                            }`}>
-                              {rate.label}
-                            </p>
-                            <div className={`mt-3 inline-flex items-baseline gap-1 rounded-xl px-4 py-2.5 ${
-                              roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'bg-white/14' : 'bg-white'
-                            }`}>
-                              <span className={`text-xl font-bold ${
-                                roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white' : 'text-gray-900'
+                            <div className="flex items-center justify-between gap-4 sm:flex-col sm:gap-0">
+                              <p className={`text-xs font-bold uppercase tracking-[0.16em] ${
+                                roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white/75' : 'text-gray-500'
                               }`}>
-                                {rate.price}
-                              </span>
-                              <span className={`text-sm ${
-                                roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white/80' : 'text-gray-500'
+                                {rate.label}
+                              </p>
+                              <div className={`inline-flex items-baseline gap-1 rounded-xl px-0 py-0 sm:mt-3 sm:px-4 sm:py-2.5 ${
+                                roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'sm:bg-white/14' : 'sm:bg-white'
                               }`}>
-                                HT
-                              </span>
+                                <span className={`text-lg font-bold sm:text-xl ${
+                                  roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white' : 'text-gray-900'
+                                }`}>
+                                  {rate.price}
+                                </span>
+                                <span className={`text-sm ${
+                                  roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white/80' : 'text-gray-500'
+                                }`}>
+                                  HT
+                                </span>
+                              </div>
                             </div>
                           </button>
                         ))}
@@ -772,7 +787,6 @@ export function HomePage() {
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-gray-500">{layout.label}</p>
-                      <p className="mt-1 text-sm text-gray-600">Capacité selon cette configuration</p>
                     </div>
                   </div>
 
@@ -780,7 +794,6 @@ export function HomePage() {
                     <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-4 shadow-sm">
                       <div>
                         <p className="font-serif text-lg font-black text-gray-900">La Place</p>
-                        <p className="text-sm text-gray-500">Ouverte, lumineuse</p>
                       </div>
                       <p className="text-2xl font-black text-gray-900">{layout.capacities.atelier}</p>
                     </div>
@@ -788,7 +801,6 @@ export function HomePage() {
                     <div className="flex items-center justify-between rounded-2xl bg-primary/[0.07] px-4 py-4 shadow-sm">
                       <div>
                         <p className="font-serif text-lg font-black text-gray-900">L&apos;Annexe</p>
-                        <p className="text-sm text-gray-500">Fermée, confidentielle</p>
                       </div>
                       <p className="text-2xl font-black text-primary">{layout.capacities.board}</p>
                     </div>
@@ -876,12 +888,12 @@ export function HomePage() {
                           <div className="grid gap-3">
                             <div className="rounded-2xl bg-secondary px-4 py-4 ring-1 ring-primary/12">
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">La Place</p>
-                              <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.atelier}</p>
+                              <p className="mt-2 text-sm leading-relaxed text-primary">{item.atelier}</p>
                             </div>
 
                             <div className="rounded-2xl bg-secondary px-4 py-4 ring-1 ring-primary/12">
                               <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">L&apos;Annexe</p>
-                              <p className="mt-2 text-sm leading-relaxed text-gray-700">{item.board}</p>
+                              <p className="mt-2 text-sm leading-relaxed text-primary">{item.board}</p>
                             </div>
                           </div>
                         </div>
@@ -952,50 +964,96 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="space-y-12 md:hidden">
-            {sharedSpaces.map(([key, gallery], index) => {
-              const marqueeImages = [...gallery.images.slice(0, 3), ...gallery.images.slice(0, 3)];
-              const marqueeDirectionClass = index % 2 === 1 ? 'shared-marquee-right' : 'shared-marquee-left';
-              const marqueeStyle = {
-                '--shared-marquee-duration': `${18 + index * 2}s`,
-                '--shared-marquee-gap': '0.9rem',
-              } as CSSProperties;
+          <div className="md:hidden">
+            <div className="mb-6 flex flex-wrap justify-center gap-2.5">
+              {sharedSpaces.map(([key, gallery], index) => {
+                const isActive = desktopSharedSpaceKey === key;
 
-              return (
-                <article key={`shared-mobile-${key}`} className="mx-auto flex max-w-[24rem] flex-col items-center text-center">
-                  <div
-                    className="relative min-h-[18rem] w-full overflow-hidden py-1"
-                    style={{borderRadius: '9999px'}}
+                return (
+                  <button
+                    key={`shared-mobile-filter-${key}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSharedSpace({key, index});
+                      setSharedSpaceCycleReset((current) => current + 1);
+                    }}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? 'border-white/20 bg-white text-primary shadow-[0_12px_28px_rgba(255,255,255,0.16)]'
+                        : 'border-white/14 bg-white/8 text-white active:border-white/20 active:bg-white/14'
+                    }`}
                   >
-                    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-primary via-primary/92 to-transparent" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-primary via-primary/92 to-transparent" />
+                    <span className="h-2 w-2 rounded-full bg-current opacity-70" />
+                    <span>{gallery.title}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-                    <div className={`shared-marquee-track ${marqueeDirectionClass} pl-4 pr-4`} style={marqueeStyle}>
-                      {marqueeImages.map((image, imageIndex) => (
-                        <div
-                          key={`${key}-mobile-marquee-${imageIndex}`}
-                          className="relative aspect-square w-[18rem] shrink-0 overflow-hidden shadow-2xl"
-                          style={{borderRadius: '9999px'}}
-                        >
-                          <img
-                            src={image}
-                            alt={`${gallery.title} - aperçu ${imageIndex + 1}`}
-                            className="absolute inset-0 h-full w-full object-cover"
-                            referrerPolicy="no-referrer"
-                            decoding="async"
-                          />
-                        </div>
-                      ))}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`shared-mobile-panel-${desktopSharedSpaceKey}`}
+                initial={{opacity: 0, y: 6}}
+                animate={{opacity: 1, y: 0, scale: 1}}
+                exit={{opacity: 0, y: -4}}
+                transition={{duration: 0.12, ease: 'easeOut'}}
+                className="space-y-5"
+              >
+                <div className="relative min-h-[19rem] overflow-hidden rounded-[2.2rem] shadow-[0_28px_60px_rgba(3,18,61,0.24)]">
+                  <img
+                    src={desktopSharedSpaceImages[0]}
+                    alt={desktopSharedSpace.title}
+                    className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                    decoding="async"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                  <div className="absolute bottom-5 left-5 right-5">
+                    <span className="inline-flex rounded-full border border-white/18 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/85 backdrop-blur-md">
+                      {desktopSharedSpace.title}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {desktopSharedSpaceImages.slice(1).map((image, imageIndex) => (
+                    <div
+                      key={`${desktopSharedSpaceKey}-mobile-detail-${image}`}
+                      className="relative min-h-[11.5rem] overflow-hidden rounded-[1.8rem] shadow-[0_20px_45px_rgba(3,18,61,0.18)]"
+                    >
+                      <img
+                        src={image}
+                        alt={`${desktopSharedSpace.title} - détail ${imageIndex + 2}`}
+                        className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        decoding="async"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/22 via-transparent to-transparent" />
                     </div>
-                  </div>
+                  ))}
+                </div>
 
-                  <div className="mx-auto mt-6 max-w-[22rem]">
-                    <h3 className="text-2xl font-bold text-white">{gallery.title}</h3>
-                    <p className="mt-3 text-base leading-relaxed text-white/82">{gallery.summary}</p>
+                <div className="rounded-[2rem] border border-white/12 bg-white/8 p-6 shadow-[0_24px_60px_rgba(3,18,61,0.14)] backdrop-blur-md">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Espace partagé</p>
+                  <h3 className="mt-3 font-serif text-3xl font-black leading-tight text-white">
+                    {desktopSharedSpace.title}
+                  </h3>
+                  <p className="mt-4 text-base leading-relaxed text-white/80">
+                    {desktopSharedSpace.summary}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    {desktopSharedSpace.services.map((service) => (
+                      <span
+                        key={`${desktopSharedSpaceKey}-mobile-service-${service}`}
+                        className="rounded-full border border-white/14 bg-white/10 px-3.5 py-2 text-sm font-medium text-white/82"
+                      >
+                        {service}
+                      </span>
+                    ))}
                   </div>
-                </article>
-              );
-            })}
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           <div className="hidden md:block">
@@ -1108,7 +1166,7 @@ export function HomePage() {
               <button
                 type="button"
                 onClick={() => {
-                  setPrefill({reservationType: 'event'});
+                  setPrefill(null);
                   scrollToReservation();
                 }}
                 className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-sm font-bold text-primary shadow-[0_18px_45px_rgba(255,255,255,0.2)] transition-colors hover:bg-white/90"
