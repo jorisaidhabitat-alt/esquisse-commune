@@ -521,12 +521,21 @@ export function HomePage() {
                                     ? 'opacity-100'
                                     : 'pointer-events-none opacity-0'
                               }`}>
-                                <span className="block">
-                                  Loyer : {getDeskAmount(desk.price) - getDeskAmount(desk.charges)}€ / mois HT
+                                <span className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2">
+                                  <span>Loyer</span>
+                                  <span className="overflow-hidden text-white/55">................................</span>
+                                  <span className="text-right">{getDeskAmount(desk.price) - getDeskAmount(desk.charges)}€ / mois HT</span>
                                 </span>
-                                <span className="mt-1 block">Charges : {desk.charges} / mois HT</span>
-                                <span className="mt-1 block">
-                                  Total : {desk.price} HT
+                                <span className="mt-1 grid grid-cols-[auto_1fr_auto] items-center gap-x-2">
+                                  <span>Charges</span>
+                                  <span className="overflow-hidden text-white/55">................................</span>
+                                  <span className="text-right">{desk.charges} / mois HT</span>
+                                </span>
+                                <span className="mt-2 block border-t border-white/15" />
+                                <span className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 font-semibold">
+                                  <span>Total</span>
+                                  <span className="overflow-hidden text-white/55">................................</span>
+                                  <span className="text-right">{desk.price} HT</span>
                                 </span>
                                 <span className="mt-2 block text-white/80">
                                   Comprend le loyer, l’électricité, l’eau, le gaz et internet.
