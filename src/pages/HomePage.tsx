@@ -113,9 +113,9 @@ const heroImages = [
     objectPosition: '64% center',
   },
   {
-    src: '/gallery/phonebox-3.webp',
-    alt: 'Phone box à Chartres-de-Bretagne, proche de Rennes',
-    objectPosition: '28% center',
+    src: '/rooms/la-place-1.webp',
+    alt: 'Salle La Place à Chartres-de-Bretagne, proche de Rennes',
+    objectPosition: '34% center',
   },
 ] as const;
 
@@ -126,14 +126,17 @@ export function HomePage() {
   const [selectedSharedSpace, setSelectedSharedSpace] = useState<{key: string; index: number} | null>(null);
   const [sharedSpaceCycleReset, setSharedSpaceCycleReset] = useState(0);
   const [isSharedSpacesDesktop, setIsSharedSpacesDesktop] = useState(false);
+  const [hasPointerHover, setHasPointerHover] = useState(false);
+  const [openDeskChargesInfo, setOpenDeskChargesInfo] = useState<string | null>(null);
   const [openRoomHighlight, setOpenRoomHighlight] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
   const [roomImageIndexes, setRoomImageIndexes] = useState<Record<string, number>>({});
-  const [roomCycles, setRoomCycles] = useState<Record<string, number>>({});
   const [roomCardSelections, setRoomCardSelections] = useState<Record<string, {mode: RoomBookingMode | null; options: string[]}>>({});
   const deskTouchStartX = useRef<Record<string, number>>({});
   const deskTouchStartY = useRef<Record<string, number>>({});
+
+  const getDeskAmount = (value: string) => Number(value.replace(/[^\d]/g, '')) || 0;
 
   useEffect(() => {
     applySeo({
@@ -185,38 +188,36 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const syncPointerHover = (event?: MediaQueryListEvent) => {
+      const nextValue = event ? event.matches : mediaQuery.matches;
+      setHasPointerHover(nextValue);
+
+      if (nextValue) {
+        setOpenDeskChargesInfo(null);
+      }
+    };
+
+    syncPointerHover();
+    mediaQuery.addEventListener('change', syncPointerHover);
+
+    return () => mediaQuery.removeEventListener('change', syncPointerHover);
+  }, []);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       setRoomImageIndexes((current) => {
         const next = {...current};
-        const cycledRoomIds: string[] = [];
 
         rooms.forEach((room) => {
           const images = (room.images.length ? room.images : [room.image]).slice(0, 3);
           const currentIndex = current[room.id] ?? 0;
-
-          if (currentIndex === images.length - 1) {
-            next[room.id] = 0;
-            cycledRoomIds.push(room.id);
-          } else {
-            next[room.id] = currentIndex + 1;
-          }
+          next[room.id] = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
         });
-
-        if (cycledRoomIds.length > 0) {
-          setRoomCycles((cycles) => {
-            const nextCycles = {...cycles};
-
-            cycledRoomIds.forEach((roomId) => {
-              nextCycles[roomId] = (cycles[roomId] ?? 0) + 1;
-            });
-
-            return nextCycles;
-          });
-        }
 
         return next;
       });
-    }, 3000);
+    }, 5000);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -233,24 +234,6 @@ export function HomePage() {
     return () => mediaQuery.removeEventListener('change', syncSharedSpacesViewport);
   }, []);
 
-  useEffect(() => {
-    if (sharedSpaces.length <= 1 || !isSharedSpacesDesktop) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setSelectedSharedSpace((current) => {
-        const currentIndex = current?.index ?? 0;
-        const nextIndex = (currentIndex + 1) % sharedSpaces.length;
-        const [nextKey] = sharedSpaces[nextIndex];
-
-        return {key: nextKey, index: nextIndex};
-      });
-    }, 5000);
-
-    return () => window.clearInterval(interval);
-  }, [isSharedSpacesDesktop, sharedSpaceCycleReset]);
-
   const scrollToReservation = () => {
     document.getElementById('reservation')?.scrollIntoView({behavior: 'smooth', block: 'start'});
   };
@@ -265,6 +248,10 @@ export function HomePage() {
 
       return {...current, [deskId]: nextIndex};
     });
+  };
+
+  const goToRoomImage = (roomId: string, imageIndex: number) => {
+    setRoomImageIndexes((current) => ({...current, [roomId]: imageIndex}));
   };
 
   const handleDeskTouchStart = (deskId: string, event: TouchEvent<HTMLDivElement>) => {
@@ -438,8 +425,8 @@ export function HomePage() {
             <div>
               <h2 className="text-center font-serif text-4xl font-black text-white md:text-5xl">Vos bureaux à louer</h2>
               <p className="mt-5 text-base leading-relaxed text-white/80 md:mt-6 md:text-lg">
-                Des bureaux fermés, lumineux et immédiatement opérationnels pour toute recherche de
-                location de bureaux à Rennes, avec une implantation à Chartres-de-Bretagne, proche de Rennes.
+                Vous recherchez une location de bureaux à Rennes ? Découvrez nos bureaux privés, lumineux et
+                aménageables, implantés à Chartres-de-Bretagne, proche de Rennes.
               </p>
             </div>
           </div>
@@ -448,12 +435,12 @@ export function HomePage() {
             {desks.map((desk) => (
               <article
                 key={desk.id}
-                className={`group flex flex-col overflow-hidden rounded-3xl bg-gray-50 text-left text-gray-900 shadow-lg transition-transform duration-300 ${
+                className={`group flex flex-col overflow-visible rounded-3xl bg-gray-50 text-left text-gray-900 shadow-lg transition-transform duration-300 ${
                   desk.available ? 'hover:-translate-y-2 hover:shadow-2xl' : 'opacity-80'
                 }`}
               >
                 <div
-                  className="relative h-56 overflow-hidden sm:h-64"
+                  className="relative h-56 overflow-hidden rounded-t-3xl sm:h-64"
                   onTouchStart={(event) => handleDeskTouchStart(desk.id, event)}
                   onTouchEnd={(event) => handleDeskTouchEnd(desk.id, desk.images.length, event)}
                   style={{touchAction: 'pan-y'}}
@@ -463,7 +450,7 @@ export function HomePage() {
                       key={`${desk.id}-${image}`}
                       src={image}
                       alt={`${desk.name} ${index + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 ease-out sm:duration-[2800ms] sm:ease-in-out ${
+                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ease-out sm:duration-700 sm:ease-out ${
                         index === (deskImageIndexes[desk.id] ?? 0) ? 'opacity-100' : 'opacity-0'
                       } ${!desk.available ? 'grayscale' : ''}`}
                       referrerPolicy="no-referrer"
@@ -508,7 +495,46 @@ export function HomePage() {
                       <Wallet size={16} className="text-primary" />
                       <div>
                         <div>{desk.price}</div>
-                        <div className="pt-1 text-xs font-medium text-gray-500">Charges comprises</div>
+                        <div className="pt-1 text-xs font-medium text-gray-500">
+                          <span className="group/info relative inline-flex items-center gap-1.5">
+                            <span>Charges comprises</span>
+                            <span className="relative inline-flex">
+                              <button
+                                type="button"
+                                aria-label="Voir le détail des charges comprises"
+                                aria-expanded={openDeskChargesInfo === desk.id}
+                                onClick={() => {
+                                  if (hasPointerHover) {
+                                    return;
+                                  }
+
+                                  setOpenDeskChargesInfo((current) => current === desk.id ? null : desk.id);
+                                }}
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500"
+                              >
+                                <Info size={13} />
+                              </button>
+                              <span className={`absolute bottom-[calc(100%+0.5rem)] right-0 z-20 w-[min(16rem,calc(100vw-4rem))] rounded-xl bg-gray-900 px-3 py-3 text-[11px] font-medium leading-relaxed text-white shadow-xl transition-opacity duration-200 sm:left-1/2 sm:right-auto sm:w-64 sm:-translate-x-1/2 ${
+                                hasPointerHover
+                                  ? 'pointer-events-none opacity-0 group-hover/info:opacity-100'
+                                  : openDeskChargesInfo === desk.id
+                                    ? 'opacity-100'
+                                    : 'pointer-events-none opacity-0'
+                              }`}>
+                                <span className="block">
+                                  Loyer : {getDeskAmount(desk.price) - getDeskAmount(desk.charges)}€ / mois HT
+                                </span>
+                                <span className="mt-1 block">Charges : {desk.charges} / mois HT</span>
+                                <span className="mt-1 block">
+                                  Total : {desk.price} HT
+                                </span>
+                                <span className="mt-2 block text-white/80">
+                                  Comprend le loyer, l’électricité, l’eau, le gaz et internet.
+                                </span>
+                              </span>
+                            </span>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -538,7 +564,7 @@ export function HomePage() {
               environnement professionnel et calme.
             </p>
 
-            <div className="flex flex-col items-center gap-4 text-gray-700 md:flex-row md:flex-wrap md:justify-center md:gap-12">
+            <div className="grid grid-cols-3 gap-2 text-gray-700 md:flex md:flex-row md:flex-wrap md:justify-center md:gap-12">
               <Feature icon={<Wifi size={24} />} label="Fibre haut débit" />
               <Feature icon={<Coffee size={24} />} label="Espace pause café" />
               <Feature icon={<Accessibility size={24} />} label="Accessibilité PMR" />
@@ -584,15 +610,6 @@ export function HomePage() {
                   index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
                 } ${index !== rooms.length - 1 ? 'mb-20 md:mb-32' : ''} ${!room.available ? 'opacity-80' : ''}`}
               >
-                <motion.div
-                  initial={{height: 0}}
-                  whileInView={{height: '60%'}}
-                  viewport={{once: true}}
-                  transition={{duration: 0.8, delay: 0.2}}
-                  className={`absolute top-[20%] z-0 hidden w-2 rounded-full bg-primary lg:block ${
-                    index % 2 === 0 ? '-left-8' : '-right-8'
-                  }`}
-                />
                 <div className="relative z-10 h-[340px] w-full overflow-hidden rounded-3xl shadow-2xl sm:h-[400px] lg:h-[600px] lg:w-2/3">
                   {roomImages.map((image, imageIndex) => (
                     <img
@@ -626,20 +643,20 @@ export function HomePage() {
                       ))}
                     </div>
                   </div>
-                  <div className="absolute inset-x-4 bottom-4 flex gap-2 sm:inset-x-6 sm:bottom-6 sm:gap-3">
+                  <div className="absolute inset-x-4 bottom-4 flex justify-center gap-2 sm:inset-x-6 sm:bottom-6">
                     {roomImages.map((image, imageIndex) => (
-                      <div
-                        key={`${room.id}-gauge-${image}`}
-                        className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/25"
-                      >
-                        <motion.div
-                          key={`${room.id}-${roomCycles[room.id] ?? 0}-${imageIndex}`}
-                          initial={{width: 0}}
-                          animate={{width: activeRoomImageIndex === imageIndex ? '100%' : imageIndex < activeRoomImageIndex ? '100%' : '0%'}}
-                          transition={activeRoomImageIndex === imageIndex ? {duration: 3, ease: 'linear'} : {duration: 0.35, ease: 'easeOut'}}
-                          className="h-full rounded-full bg-white"
-                        />
-                      </div>
+                      <button
+                        key={`${room.id}-dot-${image}`}
+                        type="button"
+                        aria-label={`Voir la photo ${imageIndex + 1} de ${room.name}`}
+                        aria-pressed={activeRoomImageIndex === imageIndex}
+                        onClick={() => goToRoomImage(room.id, imageIndex)}
+                        className={`h-2.5 rounded-full transition-all duration-300 ${
+                          activeRoomImageIndex === imageIndex
+                            ? 'w-6 bg-white'
+                            : 'w-2.5 bg-white/45 hover:bg-white/70'
+                        }`}
+                      />
                     ))}
                   </div>
                   {!room.available && (
@@ -677,7 +694,7 @@ export function HomePage() {
                                 options: [],
                               });
                             }}
-                            className={`rounded-3xl border px-4 py-3 text-left transition-all sm:px-5 sm:py-4 sm:text-center ${
+                            className={`rounded-2xl border px-4 py-3 text-left transition-all sm:px-5 sm:py-4 sm:text-center ${
                               roomCardSelection.mode === getRoomBookingMode(rate.label)
                                 ? 'border-primary bg-primary text-white shadow-md'
                                 : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
@@ -689,9 +706,7 @@ export function HomePage() {
                               }`}>
                                 {rate.label}
                               </p>
-                              <div className={`inline-flex items-baseline gap-1 rounded-xl px-0 py-0 sm:mt-3 sm:px-4 sm:py-2.5 ${
-                                roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'sm:bg-white/14' : 'sm:bg-white'
-                              }`}>
+                              <div className="inline-flex items-baseline gap-1 px-0 py-0 sm:mt-3">
                                 <span className={`text-lg font-bold sm:text-xl ${
                                   roomCardSelection.mode === getRoomBookingMode(rate.label) ? 'text-white' : 'text-gray-900'
                                 }`}>
@@ -711,6 +726,9 @@ export function HomePage() {
 
                     {room.options?.length ? (
                       <div>
+                        <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                          Options complémentaires
+                        </p>
                         <div className="space-y-2">
                           {room.options.map((option) => {
                             const [label, price] = option.split(':');
@@ -736,11 +754,7 @@ export function HomePage() {
                     {room.available ? (
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="sm:min-h-[42px] sm:flex sm:flex-1 sm:items-center sm:pr-4">
-                          <p className="min-h-[20px] text-sm leading-snug text-gray-500">
-                          {roomCardSelection.mode === null
-                            ? 'Choisissez d’abord un tarif pour activer la réservation.'
-                            : ''}
-                          </p>
+                          <p className="min-h-[20px] text-sm leading-snug text-gray-500" />
                         </div>
                         <button
                           type="button"
@@ -769,7 +783,7 @@ export function HomePage() {
             );
           })}
 
-          <div className="mt-20 rounded-3xl border border-gray-200 bg-white p-6 shadow-xl sm:p-8 md:mt-24 md:p-10">
+          <div className="mt-20 rounded-3xl border border-gray-200 bg-white px-7 py-12 shadow-xl sm:px-10 sm:py-14 md:mt-32 md:px-12 md:py-16">
             <div className="mb-10 text-left md:text-center">
               <h3 className="text-center font-serif text-3xl font-black text-gray-900 md:text-4xl">Comparer les deux salles</h3>
               <p className="mt-4 max-w-3xl text-sm leading-relaxed text-gray-600 md:mx-auto md:text-base">
@@ -778,7 +792,7 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="space-y-4 md:hidden">
+            <div className="mx-auto max-w-4xl space-y-4 md:hidden">
               {roomComparisonLayouts.map((layout) => (
                 <div key={`mobile-layout-${layout.id}`} className="rounded-2xl border border-gray-200 bg-gray-50/80 p-4 shadow-sm">
                   <div className="flex items-center gap-3">
@@ -795,21 +809,27 @@ export function HomePage() {
                       <div>
                         <p className="font-serif text-lg font-black text-gray-900">La Place</p>
                       </div>
-                      <p className="text-2xl font-black text-gray-900">{layout.capacities.atelier}</p>
+                      <div className="text-center">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Pers.</p>
+                        <p className="mt-1 text-2xl font-semibold text-gray-900">{layout.capacities.atelier}</p>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between rounded-2xl bg-primary/[0.07] px-4 py-4 shadow-sm">
                       <div>
                         <p className="font-serif text-lg font-black text-gray-900">L&apos;Annexe</p>
                       </div>
-                      <p className="text-2xl font-black text-primary">{layout.capacities.board}</p>
+                      <div className="text-center">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-500">Pers.</p>
+                        <p className="mt-1 text-2xl font-semibold text-gray-900">{layout.capacities.board}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="hidden overflow-hidden rounded-3xl border border-gray-200 md:block">
+            <div className="mx-auto hidden max-w-6xl overflow-hidden rounded-3xl border border-gray-200 md:block">
               <div className="grid grid-cols-[1.1fr_repeat(3,minmax(0,1fr))] border-b border-gray-200 bg-gray-50">
                 <div className="px-4 py-5 sm:px-6" />
                 {roomComparisonLayouts.map((layout) => (
@@ -828,7 +848,7 @@ export function HomePage() {
                   </div>
                 </div>
                 {roomComparisonLayouts.map((layout) => (
-                  <div key={`atelier-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-2xl font-black text-gray-900 last:border-r-0 sm:text-[2rem]">
+                  <div key={`atelier-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-xl font-semibold text-gray-900 last:border-r-0 sm:text-[1.75rem]">
                     {layout.capacities.atelier}
                   </div>
                 ))}
@@ -842,14 +862,14 @@ export function HomePage() {
                   </div>
                 </div>
                 {roomComparisonLayouts.map((layout) => (
-                  <div key={`board-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-2xl font-black text-gray-900 last:border-r-0 sm:text-[2rem]">
+                  <div key={`board-${layout.id}`} className="flex items-center justify-center border-r border-gray-200 px-4 py-5 text-xl font-semibold text-gray-900 last:border-r-0 sm:text-[1.75rem]">
                     {layout.capacities.board}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="mt-8 space-y-4 md:hidden">
+            <div className="mx-auto mt-10 max-w-4xl space-y-6 md:hidden">
               {roomComparisonHighlights.map((item) => (
                 <div
                   key={`mobile-highlight-${item.label}`}
@@ -904,7 +924,7 @@ export function HomePage() {
               ))}
             </div>
 
-            <div className="mt-8 hidden overflow-hidden rounded-3xl border border-gray-200 md:block">
+            <div className="mx-auto mt-14 hidden max-w-6xl overflow-hidden rounded-3xl border border-gray-200 md:block">
               <div className="hidden bg-gray-50 md:grid md:grid-cols-[0.8fr_1fr_1fr]">
                 <div className="border-r border-gray-200 px-4 py-4 md:px-6" />
                 <div className="border-r border-gray-200 px-4 py-4 text-center md:px-6">
@@ -999,7 +1019,7 @@ export function HomePage() {
                 transition={{duration: 0.12, ease: 'easeOut'}}
                 className="space-y-5"
               >
-                <div className="relative min-h-[19rem] overflow-hidden rounded-[2.2rem] shadow-[0_28px_60px_rgba(3,18,61,0.24)]">
+                <div className="relative min-h-[19rem] overflow-hidden rounded-3xl shadow-[0_28px_60px_rgba(3,18,61,0.24)]">
                   <img
                     src={desktopSharedSpaceImages[0]}
                     alt={desktopSharedSpace.title}
@@ -1019,7 +1039,7 @@ export function HomePage() {
                   {desktopSharedSpaceImages.slice(1).map((image, imageIndex) => (
                     <div
                       key={`${desktopSharedSpaceKey}-mobile-detail-${image}`}
-                      className="relative min-h-[11.5rem] overflow-hidden rounded-[1.8rem] shadow-[0_20px_45px_rgba(3,18,61,0.18)]"
+                      className="relative min-h-[11.5rem] overflow-hidden rounded-3xl shadow-[0_20px_45px_rgba(3,18,61,0.18)]"
                     >
                       <img
                         src={image}
@@ -1034,8 +1054,7 @@ export function HomePage() {
                 </div>
 
                 <div className="rounded-[2rem] border border-white/12 bg-white/8 p-6 shadow-[0_24px_60px_rgba(3,18,61,0.14)] backdrop-blur-md">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Espace partagé</p>
-                  <h3 className="mt-3 font-serif text-3xl font-black leading-tight text-white">
+                  <h3 className="font-serif text-3xl font-black leading-tight text-white">
                     {desktopSharedSpace.title}
                   </h3>
                   <p className="mt-4 text-base leading-relaxed text-white/80">
@@ -1091,7 +1110,7 @@ export function HomePage() {
                   transition={{duration: 0.55, ease: [0.22, 1, 0.36, 1]}}
                   className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.95fr)]"
                 >
-                  <div className="relative min-h-[36rem] overflow-hidden rounded-[3rem] shadow-[0_38px_80px_rgba(3,18,61,0.28)]">
+                  <div className="relative min-h-[36rem] overflow-hidden rounded-3xl shadow-[0_38px_80px_rgba(3,18,61,0.28)]">
                     <img
                       src={desktopSharedSpaceImages[0]}
                       alt={desktopSharedSpace.title}
@@ -1111,7 +1130,7 @@ export function HomePage() {
                     {desktopSharedSpaceImages.slice(1).map((image, imageIndex) => (
                       <div
                         key={`${desktopSharedSpaceKey}-detail-${image}`}
-                        className="relative min-h-[17.25rem] overflow-hidden rounded-[2.3rem] shadow-[0_28px_60px_rgba(3,18,61,0.22)]"
+                        className="relative min-h-[17.25rem] overflow-hidden rounded-3xl shadow-[0_28px_60px_rgba(3,18,61,0.22)]"
                       >
                         <img
                           src={image}
@@ -1137,8 +1156,7 @@ export function HomePage() {
                   className="flex h-full flex-col rounded-[2.6rem] border border-white/12 bg-white/8 p-8 shadow-[0_28px_70px_rgba(3,18,61,0.14)] backdrop-blur-md"
                 >
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.26em] text-white/55">Espace partagé</p>
-                    <h3 className="mt-4 font-serif text-4xl font-black leading-tight text-white">
+                    <h3 className="font-serif text-4xl font-black leading-tight text-white">
                       {desktopSharedSpace.title}
                     </h3>
                     <div className="mt-6">
@@ -1162,7 +1180,7 @@ export function HomePage() {
               </AnimatePresence>
             </div>
 
-            <div className="mt-8 flex justify-center">
+            <div className="mt-12 flex justify-center md:mt-14">
               <button
                 type="button"
                 onClick={() => {
@@ -1171,7 +1189,7 @@ export function HomePage() {
                 }}
                 className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-sm font-bold text-primary shadow-[0_18px_45px_rgba(255,255,255,0.2)] transition-colors hover:bg-white/90"
               >
-                Réserver un espace
+                Louer votre bureau
               </button>
             </div>
           </div>
@@ -1291,13 +1309,6 @@ export function HomePage() {
                 referrerPolicy="no-referrer-when-downgrade"
                 allowFullScreen
               />
-
-              <div className="pointer-events-none absolute inset-x-4 bottom-4 sm:inset-x-6 sm:bottom-6">
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full bg-gray-900/90 px-4 py-2.5 text-xs font-bold text-white shadow-2xl backdrop-blur sm:px-5 sm:py-3 sm:text-sm">
-                  <MapPin size={16} className="text-primary" />
-                  <span className="truncate">{siteConfig.address.street}</span>
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>
@@ -1305,7 +1316,7 @@ export function HomePage() {
 
       <section className="bg-[#f7f8f4] pb-20 pt-12 md:py-24">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
-          <div className="border-t border-b border-gray-200 py-10 md:py-12">
+          <div className="py-10 md:py-12">
             <div className="grid grid-cols-1 gap-10 md:gap-12 lg:grid-cols-[1.12fr_0.88fr] lg:items-start">
               <motion.div
               initial={{opacity: 0, y: 30}}
@@ -1313,10 +1324,10 @@ export function HomePage() {
               viewport={{once: true}}
               transition={{duration: 0.7}}
             >
-                <h2 className="mt-3 max-w-3xl text-center font-serif text-3xl font-black leading-[1.08] text-gray-900 md:mt-4 md:text-left md:text-5xl">
+                <h2 className="max-w-3xl text-center font-serif text-3xl font-black leading-[1.08] text-gray-900 md:text-left md:text-5xl">
                   Pourquoi l&apos;esquisse commune
                 </h2>
-                <div className="mt-5 max-w-3xl space-y-4 text-sm leading-relaxed text-gray-600 md:mt-6 md:space-y-5 md:text-base">
+                <div className="mt-8 max-w-3xl space-y-4 text-sm leading-relaxed text-gray-600 md:mt-10 md:space-y-5 md:text-base">
                   <p>
                     <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">Esquisse</span> : première étude d’une composition picturale, sculpturale ou architecturale, qui en trace les grandes lignes et sert de base à sa réalisation.
                     <br />
@@ -1324,11 +1335,15 @@ export function HomePage() {
                   </p>
 
                   <p>
-                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse des liens humains. <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">Le collectif</span> y a toute sa place, sans jamais effacer le besoin d’intimité.
+                    L’Esquisse Commune est née de cette idée simple : un lieu où les projets prennent forme, mais jamais tout à fait seuls. Imaginé avec Losange Architectes, cet espace a été conçu comme un cadre d’activité où peuvent se croiser les idées, les métiers et les énergies. On y crée, on y échange, on y tisse des liens humains. <span className="font-semibold text-primary">Le collectif</span> y a toute sa place, sans jamais effacer le besoin d’intimité.
                   </p>
 
                   <p>
-                    Ici, chaque entrepreneur, indépendant ou petite entreprise, développe son activité à son rythme, dans son bureau fermé et privatif, tout en profitant d’espaces partagés pensés pour <span className="inline-block whitespace-nowrap rounded-full bg-secondary px-2.5 py-1 font-semibold text-primary">se retrouver, collaborer et avancer</span> dans un environnement stimulant. L’esquisse commune est donc le lieu idéal si vous recherchez une location de bureaux à Rennes, en ayant accès à des salles de réunions et phonebox, alliant confort, proximité et partage.
+                    Ici, chaque entrepreneur, indépendant ou petite entreprise, développe son activité à son rythme, dans son bureau fermé et privatif, tout en profitant d’espaces partagés pensés pour <span className="font-semibold text-primary">se retrouver, collaborer et avancer</span> dans un environnement stimulant. L’esquisse commune est donc le lieu idéal si vous recherchez une location de bureaux à Rennes, en ayant accès à des salles de réunions et phonebox, alliant confort, proximité et partage.
+                  </p>
+
+                  <p className="font-serif text-lg leading-tight text-primary md:hidden">
+                    “Un lieu simple, vivant et professionnel, pensé pour accueillir les entreprises près de Rennes.”
                   </p>
                 </div>
               </motion.div>
@@ -1338,10 +1353,11 @@ export function HomePage() {
                 whileInView={{opacity: 1, y: 0}}
                 viewport={{once: true}}
                 transition={{duration: 0.7, delay: 0.15}}
-                className="border-t border-gray-200 pt-10 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-[3.8rem]"
+                className="relative border-t border-gray-200 pt-10 lg:border-t-0 lg:pl-12 lg:pt-0"
               >
+                <div className="absolute left-0 top-1/2 hidden h-72 w-px -translate-y-1/2 bg-gray-200 lg:block" />
                 <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-                  <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec]">
+                  <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec] md:self-start">
                     <img
                       src="/marika.png"
                       alt="Portrait de Marika"
@@ -1349,7 +1365,7 @@ export function HomePage() {
                     />
                   </div>
 
-                  <div className="flex-1 text-center md:text-left">
+                  <div className="flex-1 text-center md:self-start md:text-left">
                     <h3 className="font-serif text-3xl font-black text-gray-900 md:text-4xl">Marika</h3>
                     <p className="mt-3 max-w-md text-[14px] leading-relaxed text-gray-600 md:mt-4 md:text-[14px]">
                       Je suis à votre écoute pour vous présenter le lieu, comprendre votre activité et vous orienter
@@ -1360,14 +1376,14 @@ export function HomePage() {
                       className="mt-5 inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary/90 sm:w-auto md:mt-6"
                     >
                       Me contacter
-                      <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-[0.12em] text-white/90">
+                      <span className="px-1 text-xs font-semibold tracking-[0.12em] text-white/90">
                         {siteConfig.phoneDisplay}
                       </span>
                     </a>
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-gray-200 pt-6 md:mt-8 md:pt-8">
+                <div className="mt-6 hidden border-t border-gray-200 pt-6 md:mt-8 md:block md:pt-8">
                   <p className="mt-1 max-w-lg font-serif text-lg leading-tight text-primary md:text-[1.65rem]">
                     “Un lieu simple, vivant et professionnel, pensé pour accueillir les entreprises près de Rennes.”
                   </p>
@@ -1375,21 +1391,6 @@ export function HomePage() {
               </motion.div>
             </div>
 
-            <motion.div
-              initial={{opacity: 0, y: 30}}
-              whileInView={{opacity: 1, y: 0}}
-              viewport={{once: true}}
-              transition={{duration: 0.7, delay: 0.1}}
-              className="mt-10 overflow-hidden rounded-3xl md:mt-12"
-            >
-              <img
-                src="/esquisse-exterieur.jpg"
-                alt="Façade du bâtiment de l'esquisse commune"
-                className="h-[260px] w-full object-cover sm:h-[320px] md:h-[420px]"
-                loading="lazy"
-                decoding="async"
-              />
-            </motion.div>
           </div>
         </div>
       </section>
@@ -1432,11 +1433,11 @@ function HighlightCard({icon, title, description}: {icon: ReactNode; title: stri
 
 function Feature({icon, label}: {icon: ReactNode; label: string}) {
   return (
-    <div className="flex w-full flex-col items-center justify-center gap-3 text-center font-medium md:w-auto md:flex-row">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary">
+    <div className="flex min-w-0 flex-col items-center justify-start gap-2 text-center font-medium md:w-auto md:flex-row md:gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-primary md:h-12 md:w-12">
         {icon}
       </div>
-      <span className="text-center">{label}</span>
+      <span className="text-center text-xs leading-tight md:text-base">{label}</span>
     </div>
   );
 }

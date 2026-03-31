@@ -7,13 +7,14 @@ export interface Desk {
   orientation: string;
   capacity: string;
   price: string;
+  charges: string;
   available: boolean;
 }
 
 export const desks: Desk[] = [
   {
     id: 'aube',
-    name: "Bureau \"Le Module\"",
+    name: "Le Module",
     image: "/desks/bureau-5-1.webp",
     images: [
       "/desks/bureau-5-1.webp",
@@ -24,11 +25,12 @@ export const desks: Desk[] = [
     orientation: "Est",
     capacity: "1 à 3 pers.",
     price: "620€ / mois",
+    charges: "120€",
     available: true
   },
   {
     id: 'zenith',
-    name: "Bureau \"L'Essor\"",
+    name: "L'Essor",
     image: "/desks/bureau-5-2.webp",
     images: [
       "/desks/bureau-5-2.webp",
@@ -39,11 +41,12 @@ export const desks: Desk[] = [
     orientation: "Est",
     capacity: "1 à 3 pers.",
     price: "650€ / mois",
+    charges: "130€",
     available: true
   },
   {
     id: 'crepuscule',
-    name: "Bureau \"Le Relief\"",
+    name: "Le Relief",
     image: "/desks/bureau-6-1.webp",
     images: [
       "/desks/bureau-6-1.webp",
@@ -54,6 +57,7 @@ export const desks: Desk[] = [
     orientation: "Nord-Est",
     capacity: "4 à 5 pers.",
     price: "1250€ / mois",
+    charges: "250€",
     available: true
   }
 ];

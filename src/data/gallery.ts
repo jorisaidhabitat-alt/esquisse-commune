@@ -5,7 +5,7 @@ export const galleryData = {
     services: [
       'Assiettes et couverts à disposition',
       'Four',
-      '12 chaises blanches',
+      'Espace repas 12 pers',
       'Frigo',
       'Plaques de cuisson',
       'Micro-ondes',
@@ -23,11 +23,11 @@ export const galleryData = {
     services: [
       'Machine à grain de café',
       'Thé',
-      'Petites tables rondes',
+      'Tables d’appoint',
       'Bouilloire',
-      'Tasses à disposition',
-      'Places assises',
-      'Machine à café moulu',
+      'Vaisselles',
+      'Lieu partagé',
+      'Banquette assise',
     ],
     images: [
       '/gallery/salon-4.webp',
@@ -43,7 +43,7 @@ export const galleryData = {
       'Clavier et souris',
       'Branchement HDMI (adaptateur Mac)',
       'Prises électriques',
-      'Écran fixé',
+      'Écran fixe',
       'Support pour ordinateur portable',
     ],
     images: [

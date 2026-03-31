@@ -10,11 +10,12 @@ import {
   Mail,
   MessageSquare,
   Phone,
+  User,
   Users,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
 import type {FormEvent, ReactNode} from 'react';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {DayPicker} from 'react-day-picker';
 import {format} from 'date-fns';
 import {fr} from 'date-fns/locale';
@@ -156,6 +157,10 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     status: 'idle',
     message: '',
   });
+  const formContainerRef = useRef<HTMLDivElement | null>(null);
+  const previousStepRef = useRef(formStep);
+  const previousMobileContactStepRef = useRef(showMobileRoomContactStep);
+  const hasMountedRef = useRef(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -221,7 +226,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     halfDaySlot: roomHalfDaySlot,
   });
   const selectedRoomDurationLabel = selectedRoomRate ? `${selectedRoomRate.label} - ${selectedRoomRate.price}` : '';
-  const selectedRoomIncluded = selectedRoomRate?.details ?? (roomBookingMode === 'hourly' ? 'Location simple, sans service additionnel.' : '');
+  const selectedRoomPriceLabel = selectedRoomRate ? `Location ${selectedRoomRate.label.toLowerCase()}` : 'Réservation';
+  const selectedRoomIncluded = selectedRoomRate?.details ?? (roomBookingMode === 'hourly' ? 'Avec espace café' : '');
   const selectedRoomOptionsSummary = selectedRoomOptions.map((option) => {
     const [optionTitle] = option.split(' : ');
     const attendeeCount = contact.attendees.trim();
@@ -239,6 +245,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     allOptions: selectedRoom?.options ?? [],
     mode: roomBookingMode,
     halfDaySlot: roomHalfDaySlot,
+    startTime: roomStartTime,
   });
   const roomAttendeesReady = selectedRoomOptions.length === 0 || contact.attendees.trim().length > 0;
   const roomStartIndex = roomStartTime ? timeSlots.indexOf(roomStartTime) : -1;
@@ -265,6 +272,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   const halfDayPreviewOption =
     selectedRoom?.options?.find((option) => option.toLowerCase().includes('petit déjeuner')) ??
     'Petit déjeuner : 5€ HT par personne';
+  const [halfDayPreviewTitle, halfDayPreviewPrice] = halfDayPreviewOption.split(' : ');
+  const breakfastOptionAvailable = availableRoomOptions.some((option) => option.toLowerCase().includes('petit déjeuner'));
+  const showDisabledHalfDayBreakfastOption =
+    reservationType === 'salle' &&
+    roomBookingMode === 'halfday' &&
+    roomHalfDaySlot === 'afternoon';
   const roomAttendeeCount = Number(contact.attendees.trim() || '0');
   const selectedRoomRateAmount = parseEuroAmount(selectedRoomRate?.price ?? '');
   const roomDurationSlotCount =
@@ -310,6 +323,32 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       setShowMobileRoomContactStep(false);
     }
   }, [formStep, isDesktop, reservationType]);
+
+  useEffect(() => {
+    const movedForward = formStep > previousStepRef.current;
+    const enteredMobileContactStep = showMobileRoomContactStep && !previousMobileContactStepRef.current;
+
+    previousStepRef.current = formStep;
+    previousMobileContactStepRef.current = showMobileRoomContactStep;
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    if (isDesktop || (!movedForward && !enteredMobileContactStep)) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      formContainerRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [formStep, isDesktop, showMobileRoomContactStep]);
 
   const selectedOfferLabel =
     reservationType === 'bureau'
@@ -533,7 +572,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   };
 
   return (
-    <div className={`mx-auto w-full rounded-3xl bg-[#F4F4F5] p-4 shadow-2xl transition-[max-width] duration-300 ease-out sm:p-6 md:p-8 ${
+    <div ref={formContainerRef} className={`mx-auto w-full rounded-3xl bg-[#F4F4F5] p-4 shadow-2xl transition-[max-width] duration-300 ease-out sm:p-6 md:p-8 ${
       isWideStep ? 'max-w-6xl' : 'max-w-2xl'
     }`}>
       <AnimatePresence mode="wait">
@@ -593,7 +632,11 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
             items={desks.map((desk) => ({
               id: desk.id,
               title: desk.name,
-              subtitle: `${desk.size} • ${desk.orientation} • ${desk.capacity} • ${desk.price}`,
+              subtitleLines: [
+                `${desk.size} • ${desk.orientation}`,
+                desk.capacity,
+                desk.price,
+              ],
               icon: <Building2 size={20} />,
               image: desk.image,
               disabled: !desk.available,
@@ -684,7 +727,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl sm:h-20 sm:w-20">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl sm:h-20 sm:w-20">
                   <img
                     src={selectedOfferImage}
                     alt={selectedOfferLabel}
@@ -799,16 +842,18 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                                 setRoomEndTime('');
                                 setRoomHalfDaySlot(null);
                               }}
-                              className={`rounded-2xl border p-4 text-left transition-all ${
+                              className={`flex h-full flex-col rounded-xl border p-4 text-left transition-all ${
                                 isActive
                                   ? 'border-primary bg-primary text-white shadow-md'
                                   : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/40 hover:bg-white'
                               }`}
                             >
-                              <p className="text-sm font-bold">{rate.label}</p>
+                              <div className="min-h-[2.75rem]">
+                                <p className="text-sm font-bold leading-snug">{rate.label}</p>
+                              </div>
                               <p className={`mt-1 text-lg font-black ${isActive ? 'text-white' : 'text-gray-900'}`}>{rate.price}</p>
-                              <p className={`mt-2 text-xs leading-relaxed ${isActive ? 'text-white/75' : 'text-gray-500'}`}>
-                                {rate.details ?? 'Location simple, sans service additionnel.'}
+                              <p className={`mt-2 min-h-[2.5rem] text-xs leading-relaxed ${isActive ? 'text-white/75' : 'text-gray-500'}`}>
+                                {rate.details ?? 'Avec espace café'}
                               </p>
                             </button>
                           );
@@ -816,12 +861,6 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                       </div>
                     </div>
 
-                    {isDesktop && roomBookingMode && selectedRoomIncluded ? (
-                      <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                        <p className="text-xs font-bold uppercase tracking-wider text-primary/80">Inclus dans cette formule</p>
-                        <p className="mt-2 text-sm font-semibold text-gray-900">{selectedRoomIncluded}</p>
-                      </div>
-                    ) : null}
                   </div>
                 ) : (
                   <>
@@ -902,8 +941,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                   </div>
 
                   {selectedRoom ? (
-                    <div className="mb-4 flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
+                    <div className="mb-4 flex items-start gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl">
                         <img
                           src={selectedRoom.image}
                           alt={selectedRoom.name}
@@ -931,7 +970,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     <div className="mt-3 space-y-2">
                       <div className="flex items-baseline justify-between gap-3 text-sm font-semibold text-gray-900">
                         <span>
-                          {selectedRoomRate?.label ?? 'Réservation'}
+                          {selectedRoomPriceLabel}
                           {roomBookingMode === 'hourly' && roomDurationHours > 0 ? ` (${formatEuroAmount(roomDurationHours)} h)` : ''}
                         </span>
                         <span>{formatEuroAmount(roomBasePrice)} € HT</span>
@@ -1039,7 +1078,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         <button
                           type="button"
                           onClick={() => setRoomHalfDaySlot('morning')}
-                          className={`rounded-2xl border p-4 text-left transition-all ${
+                          className={`rounded-xl border p-4 text-left transition-all ${
                             roomHalfDaySlot === 'morning'
                               ? 'border-primary bg-primary text-white shadow-md'
                               : 'border-gray-200 bg-white text-gray-900 hover:border-primary/40'
@@ -1053,7 +1092,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         <button
                           type="button"
                           onClick={() => setRoomHalfDaySlot('afternoon')}
-                          className={`rounded-2xl border p-4 text-left transition-all ${
+                          className={`rounded-xl border p-4 text-left transition-all ${
                             roomHalfDaySlot === 'afternoon'
                               ? 'border-primary bg-primary text-white shadow-md'
                               : 'border-gray-200 bg-white text-gray-900 hover:border-primary/40'
@@ -1080,7 +1119,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
                     {roomBookingMode === 'halfday' && roomDetailsLocked ? (
                       <div className="grid grid-cols-1 gap-3 opacity-55 sm:grid-cols-2">
-                        <div className="flex min-h-[108px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
                           <div className="flex items-start gap-3">
                             <Coffee size={16} className="text-primary" />
                             <div>
@@ -1090,7 +1129,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           </div>
                         </div>
 
-                        <div className="flex min-h-[108px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
                           <div className="flex items-start gap-3">
                             <Users size={16} className="text-primary" />
                             <div>
@@ -1100,6 +1139,45 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           <div className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-400">
                             Choisir
                           </div>
+                        </div>
+                      </div>
+                    ) : showDisabledHalfDayBreakfastOption ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 opacity-55">
+                          <div className="flex items-start gap-3">
+                            <Coffee size={16} className="text-primary" />
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">{halfDayPreviewTitle}</p>
+                              {halfDayPreviewPrice ? (
+                                <p className="mt-1 text-xs font-medium text-gray-500">{halfDayPreviewPrice}</p>
+                              ) : null}
+                              <p className="mt-2 text-xs font-medium text-gray-400">
+                                Non disponible pour une demi-journée après-midi.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
+                          <div className="flex items-start gap-3">
+                            <Users size={16} className="text-primary" />
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                            </div>
+                          </div>
+                          <select
+                            id="meeting-attendees"
+                            value={contact.attendees}
+                            onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
+                            className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          >
+                            <option value="">Choisir</option>
+                            {roomAttendeeOptions.map((count) => (
+                              <option key={`meeting-attendees-${count}`} value={count}>
+                                {count}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     ) : roomBookingMode === 'halfday' && availableRoomOptions.length > 0 ? (
@@ -1117,7 +1195,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                                   checked ? current.filter((item) => item !== option) : [...current, option],
                                 );
                               }}
-                              className={`flex h-full min-h-[108px] flex-col justify-between rounded-2xl border px-4 py-4 text-left text-sm transition-colors ${
+                              className={`flex h-full min-h-[108px] flex-col justify-between rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
                                 checked
                                   ? 'border-primary bg-primary text-white shadow-md'
                                   : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
@@ -1136,7 +1214,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           );
                         })}
 
-                        <div className="flex min-h-[108px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
                           <div className="flex items-start gap-3">
                             <Users size={16} className="text-primary" />
                             <div>
@@ -1159,6 +1237,104 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           </select>
                         </div>
                       </div>
+                    ) : roomBookingMode === 'hourly' ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          disabled={!breakfastOptionAvailable}
+                          onClick={() => {
+                            if (!breakfastOptionAvailable) {
+                              return;
+                            }
+
+                            setSelectedRoomOptions((current) =>
+                              current.includes(halfDayPreviewOption)
+                                ? current.filter((item) => item !== halfDayPreviewOption)
+                                : [...current, halfDayPreviewOption],
+                            );
+                          }}
+                          className={`flex min-h-[108px] flex-col justify-between rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
+                            breakfastOptionAvailable
+                              ? selectedRoomOptions.includes(halfDayPreviewOption)
+                                ? 'border-primary bg-primary text-white shadow-md'
+                                : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
+                              : 'border-gray-200 bg-gray-50 text-gray-900 opacity-55'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Coffee
+                              size={16}
+                              className={
+                                breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
+                                  ? 'text-white'
+                                  : 'text-primary'
+                              }
+                            />
+                            <div>
+                              <p className={`text-sm font-bold ${
+                                breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
+                                  ? 'text-white'
+                                  : 'text-gray-900'
+                              }`}>
+                                {halfDayPreviewTitle}
+                              </p>
+                              {halfDayPreviewPrice ? (
+                                <p className={`mt-1 text-xs font-medium ${
+                                  breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
+                                    ? 'text-white/80'
+                                    : 'text-gray-500'
+                                }`}>
+                                  {halfDayPreviewPrice}
+                                </p>
+                              ) : null}
+                              {!breakfastOptionAvailable ? (
+                                roomStartTime ? (
+                                  <p className="mt-2 text-xs font-medium text-gray-400">
+                                    Disponible uniquement pour un début entre 9h et 11h.
+                                  </p>
+                                ) : null
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+
+                        {roomDetailsLocked ? (
+                          <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
+                            <div className="flex items-start gap-3">
+                              <Users size={16} className="text-primary" />
+                              <div>
+                                <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-400">
+                              Choisir
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
+                            <div className="flex items-start gap-3">
+                              <Users size={16} className="text-primary" />
+                              <div>
+                                <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                              </div>
+                            </div>
+                            <select
+                              id="meeting-attendees"
+                              value={contact.attendees}
+                              onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
+                              className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                              required={selectedRoomOptions.length > 0}
+                            >
+                              <option value="">Choisir</option>
+                              {roomAttendeeOptions.map((count) => (
+                                <option key={`meeting-attendees-hourly-${count}`} value={count}>
+                                  {count}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className={roomDetailsLocked ? 'pointer-events-none opacity-55' : ''}>
                         {availableRoomOptions.length > 0 ? (
@@ -1176,7 +1352,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                                       checked ? current.filter((item) => item !== option) : [...current, option],
                                     );
                                   }}
-                                  className={`rounded-2xl border px-4 py-4 text-left text-sm transition-colors ${
+                                  className={`rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
                                     checked
                                       ? 'border-primary bg-primary text-white shadow-md'
                                       : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
@@ -1301,7 +1477,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
             ) : (
               <form className="space-y-3" onSubmit={handleSubmit}>
                 {submitState.status === 'error' && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                     {submitState.message}
                   </div>
                 )}
@@ -1337,8 +1513,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     </div>
 
                     {reservationType === 'salle' && selectedRoom ? (
-                      <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-start">
-                        <div className="h-48 w-full shrink-0 overflow-hidden rounded-2xl sm:h-28 sm:w-28">
+                      <div className="mb-4 flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-start">
+                        <div className="h-48 w-full shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-28">
                           <img
                             src={selectedRoom.image}
                             alt={selectedRoom.name}
@@ -1362,8 +1538,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                   ) : null}
 
                     {reservationType === 'bureau' && selectedDesk ? (
-                      <div className="mb-4 flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
+                      <div className="mb-4 flex items-start gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl">
                           <img
                             src={selectedDesk.image}
                             alt={selectedDesk.name}
@@ -1397,7 +1573,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
                     {reservationType === 'bureau' && (
                       <p className="mt-4 text-xs font-medium text-primary">
-                        Cette demande sert à organiser une visite et qualifier votre besoin de location.
+                        Cette demande est organisée pour qualifier votre besoin et visiter le lieu.
                       </p>
                     )}
 
@@ -1406,25 +1582,29 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Prix estimatif</p>
                           <div className="mt-3 space-y-2">
-                            <div className="flex items-baseline justify-between gap-3 text-sm font-semibold text-gray-900">
-                              <span>
-                                {selectedRoomRate?.label ?? 'Réservation'}
+                            <div className="flex items-start justify-between gap-3 text-sm font-semibold text-gray-900">
+                              <span className="min-w-0 flex-1">
+                                {selectedRoomPriceLabel}
                                 {roomBookingMode === 'halfday' && roomHalfDaySlot ? ` (${roomHalfDaySlot === 'morning' ? 'matin' : 'après-midi'})` : ''}
                                 {roomBookingMode === 'hourly' && roomDurationHours > 0 ? ` (${formatEuroAmount(roomDurationHours)} h)` : ''}
                               </span>
-                              <span>{formatEuroAmount(roomBasePrice)} € HT</span>
+                              <span className="shrink-0 whitespace-nowrap text-right">{formatEuroAmount(roomBasePrice)} € HT</span>
                             </div>
 
                             {selectedRoomPriceLines.map(({option, title, unitPrice, quantity, total, unitLabel}) => (
                               <div
                                 key={`price-${option}`}
-                                className="flex items-baseline justify-between gap-3 text-sm font-semibold text-gray-900"
+                                className="flex items-start justify-between gap-3 text-sm font-semibold text-gray-900"
                               >
-                                <span>
-                                  {title}
-                                  {unitLabel ? ` (${formatEuroAmount(unitPrice)} € x ${unitLabel})` : ''}
+                                <span className="min-w-0 flex-1">
+                                  <span className="block">{title}</span>
+                                  {unitLabel ? (
+                                    <span className="mt-1 block text-xs font-medium leading-relaxed text-gray-500">
+                                      ({formatEuroAmount(unitPrice)} € x {unitLabel})
+                                    </span>
+                                  ) : null}
                                 </span>
-                                <span>{formatEuroAmount(total)} € HT</span>
+                                <span className="shrink-0 whitespace-nowrap text-right">{formatEuroAmount(total)} € HT</span>
                               </div>
                             ))}
                           </div>
@@ -1485,6 +1665,17 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {(reservationType === 'salle' || reservationType === 'bureau') && (
+                        <Field
+                          id="fullName"
+                          label="Nom et prénom"
+                          value={contact.fullName}
+                          onChange={(value) => setContact((current) => ({...current, fullName: value}))}
+                          icon={<User size={16} />}
+                          required
+                        />
+                      )}
+
                       {(reservationType === 'bureau' || reservationType === 'event' || reservationType === 'salle') && (
                         <Field
                           id="company"
@@ -1492,7 +1683,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           value={contact.company}
                           onChange={(value) => setContact((current) => ({...current, company: value}))}
                           icon={<Building2 size={16} />}
-                          required
+                          required={reservationType === 'salle'}
                         />
                       )}
 
@@ -1515,14 +1706,16 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         required
                       />
 
-                      <Field
-                        id="activity"
-                        label={reservationType === 'bureau' ? 'Activité ou besoin' : 'Objet de la demande'}
-                        value={contact.activity}
-                        onChange={(value) => setContact((current) => ({...current, activity: value}))}
-                        icon={<Briefcase size={16} />}
-                        required={reservationType !== 'salle'}
-                      />
+                      {reservationType === 'event' ? (
+                        <Field
+                          id="activity"
+                          label="Objet de la demande"
+                          value={contact.activity}
+                          onChange={(value) => setContact((current) => ({...current, activity: value}))}
+                          icon={<Briefcase size={16} />}
+                          required
+                        />
+                      ) : null}
 
                       {reservationType === 'event' && (
                         <div className="sm:col-span-2">
@@ -1612,7 +1805,7 @@ function OfferButton({
           : 'border-transparent bg-white text-gray-900 shadow-sm'
       } ${disabled ? 'cursor-not-allowed opacity-60 grayscale hover:border-transparent' : ''}`}
     >
-      <div className="mr-1 h-14 w-14 shrink-0 overflow-hidden rounded-xl lg:mr-0 lg:aspect-square lg:h-auto lg:w-full lg:rounded-[1.35rem]">
+      <div className="mr-1 h-14 w-14 shrink-0 overflow-hidden rounded-lg lg:mr-0 lg:aspect-square lg:h-auto lg:w-full lg:rounded-[1rem]">
         <img
           src={image}
           alt={title}
@@ -1699,7 +1892,15 @@ function SelectionStep({
   title: string;
   totalSteps: number;
   onBack: () => void;
-  items: Array<{id: string; title: string; subtitle: string; icon: ReactNode; image?: string; disabled?: boolean}>;
+  items: Array<{
+    id: string;
+    title: string;
+    subtitle?: string;
+    icon: ReactNode;
+    image?: string;
+    disabled?: boolean;
+    subtitleLines?: string[];
+  }>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onContinue: () => void;
@@ -1745,8 +1946,8 @@ function SelectionStep({
               } ${item.disabled ? 'cursor-not-allowed opacity-60 grayscale' : ''}`}
             >
               {item.image ? (
-                <div className={`mr-4 h-12 w-12 shrink-0 overflow-hidden rounded-xl ${
-                  useImageCards ? 'lg:mr-0 lg:aspect-square lg:h-auto lg:w-full lg:rounded-[1.35rem]' : ''
+                <div className={`mr-4 h-12 w-12 shrink-0 overflow-hidden rounded-lg ${
+                  useImageCards ? 'lg:mr-0 lg:aspect-square lg:h-auto lg:w-full lg:rounded-[1rem]' : ''
                 }`}>
                   <img
                     src={item.image}
@@ -1758,7 +1959,7 @@ function SelectionStep({
                   />
                 </div>
               ) : (
-                <div className={`mr-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                <div className={`mr-4 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${
                   selectedId === item.id ? 'bg-white/20' : 'bg-primary/10 text-primary'
                 }`}>
                   {item.icon}
@@ -1766,7 +1967,21 @@ function SelectionStep({
               )}
               <div className={useImageCards ? 'lg:w-full' : ''}>
                 <span className={`block font-bold ${useImageCards ? 'text-sm lg:text-base' : 'text-sm'}`}>{item.title}</span>
-                <span className={`text-xs ${useImageCards ? 'mt-2 block lg:text-sm' : ''} ${selectedId === item.id ? 'text-white/80' : 'text-gray-500'}`}>{item.subtitle}</span>
+
+                {item.subtitleLines?.length ? (
+                  <div className={`space-y-1.5 ${useImageCards ? 'mt-2 lg:text-sm' : 'mt-2'} text-xs`}>
+                    {item.subtitleLines.map((line, lineIndex) => (
+                      <div
+                        key={`${item.id}-line-${lineIndex}`}
+                        className={selectedId === item.id ? 'text-white/80' : 'text-gray-500'}
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </div>
+                ) : item.subtitle ? (
+                  <span className={`text-xs ${useImageCards ? 'mt-2 block lg:text-sm' : ''} ${selectedId === item.id ? 'text-white/80' : 'text-gray-500'}`}>{item.subtitle}</span>
+                ) : null}
               </div>
             </button>
           ))}

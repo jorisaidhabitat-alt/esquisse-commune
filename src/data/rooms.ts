@@ -36,7 +36,7 @@ export const rooms: Room[] = [
     features: ["Jusqu'à 8 personnes", "Télévision 65 pouces, 4K, Airplay", "Espace pause café disponible"],
     surface: "15 m²",
     rates: [
-      {label: "À l'heure", price: "25€"},
+      {label: "À l'heure", price: "25€", details: 'Avec espace café'},
       {label: 'Demi-journée', price: '90€', details: 'Avec espace café'},
       {label: 'Journée', price: '160€', details: 'Avec espace café et cafétéria'},
     ],
@@ -56,10 +56,10 @@ export const rooms: Room[] = [
     priceHour: "35€",
     priceDay: "210€",
     description: "Un espace fermé et confidentiel.",
-    features: ["Jusqu'à 8 personnes", "Système de vidéo-projecteur", "Espace pause café disponible"],
+    features: ["Jusqu'à 10 personnes", "Système de vidéo-projecteur", "Espace pause café disponible"],
     surface: "16 m²",
     rates: [
-      {label: "À l'heure", price: "35€"},
+      {label: "À l'heure", price: "35€", details: 'Avec espace café'},
       {label: 'Demi-journée', price: '110€', details: 'Avec espace pause café'},
       {label: 'Journée', price: '210€', details: 'Avec espace pause café et cafétéria'},
     ],

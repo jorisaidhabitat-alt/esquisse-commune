@@ -57,13 +57,23 @@ export function getAvailableRoomOptions({
   allOptions,
   mode,
   halfDaySlot,
+  startTime,
 }: {
   allOptions: string[];
   mode: RoomBookingMode | null;
   halfDaySlot?: HalfDaySlot | null;
+  startTime?: string;
 }) {
   if (mode === 'day') {
     return allOptions;
+  }
+
+  if (mode === 'hourly') {
+    if (!isMorningHourlyStart(startTime)) {
+      return [];
+    }
+
+    return allOptions.filter((option) => option.toLowerCase().includes('petit déjeuner'));
   }
 
   if (mode === 'halfday') {
@@ -72,13 +82,30 @@ export function getAvailableRoomOptions({
     }
 
     if (halfDaySlot === 'afternoon') {
-      return allOptions.filter((option) => !option.toLowerCase().includes('petit déjeuner'));
+      return [];
     }
 
     return allOptions;
   }
 
   return [];
+}
+
+function isMorningHourlyStart(startTime?: string) {
+  if (!startTime) {
+    return false;
+  }
+
+  const [hoursText, minutesText] = startTime.split(':');
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return false;
+  }
+
+  const totalMinutes = hours * 60 + minutes;
+  return totalMinutes >= 9 * 60 && totalMinutes <= 11 * 60;
 }
 
 export function normalizeContactPayload(value: unknown): ContactPayload {
