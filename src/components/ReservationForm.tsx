@@ -340,14 +340,32 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       return;
     }
 
-    const frame = window.requestAnimationFrame(() => {
-      formContainerRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
+    let frameOne = 0;
+    let frameTwo = 0;
+
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        const formTop = formContainerRef.current?.getBoundingClientRect().top;
+
+        if (typeof formTop !== 'number') {
+          return;
+        }
+
+        const mobileHeaderOffset = 80;
+        const extraTopSpacing = 28;
+        const targetTop = Math.max(0, window.scrollY + formTop - mobileHeaderOffset - extraTopSpacing);
+
+        window.scrollTo({
+          top: targetTop,
+          behavior: 'smooth',
+        });
       });
     });
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frameOne);
+      window.cancelAnimationFrame(frameTwo);
+    };
   }, [formStep, isDesktop, showMobileRoomContactStep]);
 
   const selectedOfferLabel =
