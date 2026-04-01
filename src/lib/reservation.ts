@@ -22,6 +22,16 @@ export type ReservationRequestPayload = {
     duration: string;
     included: string;
     options: string[];
+    pricing?: {
+      lines: Array<{
+        label: string;
+        detail?: string;
+        amountHt: string;
+      }>;
+      totalHt: string;
+      vatAmount: string;
+      totalTtc: string;
+    };
   };
 };
 
@@ -130,11 +140,31 @@ export function normalizeRoomBooking(value: unknown) {
         .map((item) => item.trim())
         .filter(Boolean)
     : [];
+  const pricingSource = isRecord(source.pricing) ? source.pricing : {};
+  const lines = Array.isArray(pricingSource.lines)
+    ? pricingSource.lines
+        .map((line) => {
+          const lineSource = isRecord(line) ? line : {};
+
+          return {
+            label: normalizeText(lineSource.label),
+            detail: normalizeText(lineSource.detail),
+            amountHt: normalizeText(lineSource.amountHt),
+          };
+        })
+        .filter((line) => line.label && line.amountHt)
+    : [];
 
   return {
     duration: normalizeText(source.duration),
     included: normalizeText(source.included),
     options,
+    pricing: {
+      lines,
+      totalHt: normalizeText(pricingSource.totalHt),
+      vatAmount: normalizeText(pricingSource.vatAmount),
+      totalTtc: normalizeText(pricingSource.totalTtc),
+    },
   };
 }
 
@@ -183,6 +213,30 @@ export function buildReservationText({
 
   if (reservationType === 'salle' && roomBooking?.options.length) {
     lines.push(`Options souhaitées : ${roomBooking.options.join(', ')}`);
+  }
+
+  if (reservationType === 'salle' && roomBooking?.pricing?.lines.length) {
+    lines.push('', 'Récapitulatif tarifaire :');
+
+    roomBooking.pricing.lines.forEach((line) => {
+      lines.push(`- ${line.label} : ${line.amountHt}`);
+
+      if (line.detail) {
+        lines.push(`  ${line.detail}`);
+      }
+    });
+
+    if (roomBooking.pricing.totalHt) {
+      lines.push(`Total HT : ${roomBooking.pricing.totalHt}`);
+    }
+
+    if (roomBooking.pricing.vatAmount) {
+      lines.push(`TVA (20 %) : ${roomBooking.pricing.vatAmount}`);
+    }
+
+    if (roomBooking.pricing.totalTtc) {
+      lines.push(`Total TTC : ${roomBooking.pricing.totalTtc}`);
+    }
   }
 
   if (contact.company) {

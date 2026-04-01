@@ -446,17 +446,23 @@ export function HomePage() {
                   style={{touchAction: 'pan-y'}}
                 >
                   {desk.images.map((image, index) => (
-                    <img
+                    <div
                       key={`${desk.id}-${image}`}
-                      src={image}
-                      alt={`${desk.name} ${index + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ease-out sm:duration-700 sm:ease-out ${
+                      className={`absolute inset-0 overflow-hidden rounded-t-3xl transition-opacity duration-200 ease-out [backface-visibility:hidden] sm:duration-700 sm:ease-out ${
                         index === (deskImageIndexes[desk.id] ?? 0) ? 'opacity-100' : 'opacity-0'
-                      } ${!desk.available ? 'grayscale' : ''}`}
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                      decoding="async"
-                    />
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${desk.name} ${index + 1}`}
+                        className={`h-full w-full rounded-t-3xl object-cover [backface-visibility:hidden] ${
+                          !desk.available ? 'grayscale' : ''
+                        }`}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
                   ))}
                   <button
                     type="button"

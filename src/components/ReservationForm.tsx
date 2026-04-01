@@ -148,6 +148,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   const [roomEndTime, setRoomEndTime] = useState('');
   const [roomHalfDaySlot, setRoomHalfDaySlot] = useState<HalfDaySlot | null>(null);
   const [selectedRoomOptions, setSelectedRoomOptions] = useState<string[]>([]);
+  const [breakfastChoice, setBreakfastChoice] = useState<'selected' | 'declined' | null>(null);
+  const [dayOptionsChoice, setDayOptionsChoice] = useState(false);
   const [contact, setContact] = useState<ContactPayload>(initialContactState);
   const [showMobileRoomContactStep, setShowMobileRoomContactStep] = useState(false);
   const [submitState, setSubmitState] = useState<{
@@ -202,7 +204,13 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     setSelectedRoomOptions(normalizedReservationType === 'salle'
       ? (prefill.selectedRoomOptions ?? []).filter((option) => allowedPrefillOptions.includes(option))
       : []);
+    setBreakfastChoice(
+      normalizedReservationType === 'salle' && (prefill.selectedRoomOptions ?? []).some((option) => option.toLowerCase().includes('petit déjeuner'))
+        ? 'selected'
+        : null,
+    );
     setSubmitState({status: 'idle', message: ''});
+    setDayOptionsChoice(false);
 
     if (normalizedReservationType === 'bureau' && prefill.deskId) {
       setFormStep(3);
@@ -274,6 +282,14 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
     'Petit déjeuner : 5€ HT par personne';
   const [halfDayPreviewTitle, halfDayPreviewPrice] = halfDayPreviewOption.split(' : ');
   const breakfastOptionAvailable = availableRoomOptions.some((option) => option.toLowerCase().includes('petit déjeuner'));
+  const breakfastSelected = selectedRoomOptions.includes(halfDayPreviewOption);
+  const requiresBreakfastDecision =
+    reservationType === 'salle' &&
+    (
+      (roomBookingMode === 'halfday' && roomHalfDaySlot === 'morning' && breakfastOptionAvailable) ||
+      (roomBookingMode === 'hourly' && breakfastOptionAvailable)
+    );
+  const breakfastDecisionReady = !requiresBreakfastDecision || breakfastChoice !== null;
   const showDisabledHalfDayBreakfastOption =
     reservationType === 'salle' &&
     roomBookingMode === 'halfday' &&
@@ -317,6 +333,29 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       return next.length === current.length ? current : next;
     });
   }, [availableRoomOptions]);
+
+  useEffect(() => {
+    if (roomBookingMode !== 'day' || selectedRoomOptions.length > 0) {
+      setDayOptionsChoice(false);
+    }
+  }, [roomBookingMode, selectedRoomOptions]);
+
+  useEffect(() => {
+    if (!requiresBreakfastDecision) {
+      if (breakfastChoice !== null) {
+        setBreakfastChoice(null);
+      }
+
+      return;
+    }
+
+    const hasBreakfastSelected = selectedRoomOptions.includes(halfDayPreviewOption);
+    const nextChoice = hasBreakfastSelected ? 'selected' : breakfastChoice === 'declined' ? 'declined' : null;
+
+    if (nextChoice !== breakfastChoice) {
+      setBreakfastChoice(nextChoice);
+    }
+  }, [breakfastChoice, halfDayPreviewOption, requiresBreakfastDecision, selectedRoomOptions]);
 
   useEffect(() => {
     if (reservationType === 'salle' && formStep === 5 && !isDesktop) {
@@ -497,6 +536,29 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                 duration: selectedRoomDurationLabel,
                 included: selectedRoomIncluded,
                 options: selectedRoomOptions,
+                pricing: {
+                  lines: [
+                    {
+                      label:
+                        `${selectedRoomPriceLabel}` +
+                        (roomBookingMode === 'halfday' && roomHalfDaySlot
+                          ? ` (${roomHalfDaySlot === 'morning' ? 'matin' : 'après-midi'})`
+                          : '') +
+                        (roomBookingMode === 'hourly' && roomDurationHours > 0
+                          ? ` (${formatEuroAmount(roomDurationHours)} h)`
+                          : ''),
+                      amountHt: `${formatEuroAmount(roomBasePrice)} € HT`,
+                    },
+                    ...selectedRoomPriceLines.map(({title, unitPrice, unitLabel, total}) => ({
+                      label: title,
+                      detail: unitLabel ? `(${formatEuroAmount(unitPrice)} € x ${unitLabel})` : '',
+                      amountHt: `${formatEuroAmount(total)} € HT`,
+                    })),
+                  ],
+                  totalHt: `${formatEuroAmount(selectedRoomTotalHt)} € HT`,
+                  vatAmount: `${formatEuroAmount(selectedRoomVatAmount)} €`,
+                  totalTtc: `${formatEuroAmount(selectedRoomTotalTtc)} € TTC`,
+                },
               }
             : undefined,
         }),
@@ -1199,190 +1261,296 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         </div>
                       </div>
                     ) : roomBookingMode === 'halfday' && availableRoomOptions.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {availableRoomOptions.map((option) => {
-                          const checked = selectedRoomOptions.includes(option);
-                          const [optionTitle, optionPrice] = option.split(' : ');
+                      <>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                            <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 lg:order-2">
+                              <div className="flex items-start gap-3">
+                                <Users size={16} className="text-primary" />
+                                <div>
+                                  <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                                </div>
+                              </div>
+                              <select
+                                id="meeting-attendees"
+                                value={contact.attendees}
+                                onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
+                                className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                required={selectedRoomOptions.length > 0}
+                              >
+                                <option value="">Choisir</option>
+                                {roomAttendeeOptions.map((count) => (
+                                  <option key={`meeting-attendees-${count}`} value={count}>
+                                    {count}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
 
-                          return (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => {
-                                setSelectedRoomOptions((current) =>
-                                  checked ? current.filter((item) => item !== option) : [...current, option],
-                                );
-                              }}
-                              className={`flex h-full min-h-[108px] flex-col justify-between rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
-                                checked
+                          <button
+                            type="button"
+                            disabled={breakfastChoice === 'declined'}
+                            onClick={() => {
+                              const nextSelected = !breakfastSelected;
+                              setBreakfastChoice(nextSelected ? 'selected' : null);
+                              setSelectedRoomOptions(nextSelected ? [halfDayPreviewOption] : []);
+                            }}
+                            className={`min-h-[108px] rounded-xl border px-4 py-3 text-left text-sm transition-colors lg:order-1 ${
+                                breakfastChoice === 'declined'
+                                ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-55'
+                                : breakfastSelected
                                   ? 'border-primary bg-primary text-white shadow-md'
-                                  : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
+                                : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
                               }`}
                             >
                               <div className="flex items-start gap-3">
-                                <Coffee size={16} className={checked ? 'text-white' : 'text-primary'} />
-                                <div>
-                                  <p className={`font-bold ${checked ? 'text-white' : 'text-gray-900'}`}>{optionTitle}</p>
-                                  {optionPrice ? (
-                                    <p className={`mt-1 text-xs font-medium ${checked ? 'text-white/80' : 'text-gray-500'}`}>{optionPrice}</p>
+                                <Coffee size={16} className={breakfastSelected ? 'text-white' : 'text-primary'} />
+                                <div className="min-w-0 flex-1">
+                                  <p className={`font-bold ${
+                                    breakfastChoice === 'declined' ? 'text-gray-400' : breakfastSelected ? 'text-white' : 'text-gray-900'
+                                  }`}>{halfDayPreviewTitle}</p>
+                                  {halfDayPreviewPrice ? (
+                                    <p className={`mt-0.5 text-xs font-medium ${
+                                    breakfastChoice === 'declined' ? 'text-gray-400' : breakfastSelected ? 'text-white/80' : 'text-gray-500'
+                                  }`}>
+                                      {halfDayPreviewPrice}
+                                    </p>
                                   ) : null}
                                 </div>
                               </div>
                             </button>
-                          );
-                        })}
-
-                        <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                          <div className="flex items-start gap-3">
-                            <Users size={16} className="text-primary" />
-                            <div>
-                              <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
-                            </div>
                           </div>
-                          <select
-                            id="meeting-attendees"
-                            value={contact.attendees}
-                            onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
-                            className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                            required={selectedRoomOptions.length > 0}
-                          >
-                            <option value="">Choisir</option>
-                            {roomAttendeeOptions.map((count) => (
-                              <option key={`meeting-attendees-${count}`} value={count}>
-                                {count}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    ) : roomBookingMode === 'hourly' ? (
-                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          disabled={!breakfastOptionAvailable}
-                          onClick={() => {
-                            if (!breakfastOptionAvailable) {
-                              return;
-                            }
 
-                            setSelectedRoomOptions((current) =>
-                              current.includes(halfDayPreviewOption)
-                                ? current.filter((item) => item !== halfDayPreviewOption)
-                                : [...current, halfDayPreviewOption],
-                            );
-                          }}
-                          className={`flex min-h-[108px] flex-col justify-between rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
-                            breakfastOptionAvailable
-                              ? selectedRoomOptions.includes(halfDayPreviewOption)
-                                ? 'border-primary bg-primary text-white shadow-md'
-                                : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
-                              : 'border-gray-200 bg-gray-50 text-gray-900 opacity-55'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Coffee
-                              size={16}
-                              className={
-                                breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
-                                  ? 'text-white'
-                                  : 'text-primary'
-                              }
-                            />
-                            <div>
-                              <p className={`text-sm font-bold ${
-                                breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
-                                  ? 'text-white'
-                                  : 'text-gray-900'
-                              }`}>
-                                {halfDayPreviewTitle}
-                              </p>
-                              {halfDayPreviewPrice ? (
-                                <p className={`mt-1 text-xs font-medium ${
-                                  breakfastOptionAvailable && selectedRoomOptions.includes(halfDayPreviewOption)
-                                    ? 'text-white/80'
-                                    : 'text-gray-500'
-                                }`}>
-                                  {halfDayPreviewPrice}
-                                </p>
-                              ) : null}
-                              {!breakfastOptionAvailable ? (
-                                roomStartTime ? (
-                                  <p className="mt-2 text-xs font-medium text-gray-400">
-                                    Disponible uniquement pour un début entre 9h et 11h.
-                                  </p>
-                                ) : null
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-
-                        {roomDetailsLocked ? (
-                          <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                            <div className="flex items-start gap-3">
-                              <Users size={16} className="text-primary" />
-                              <div>
-                                <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
-                              </div>
-                            </div>
-                            <div className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-400">
-                              Choisir
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
-                            <div className="flex items-start gap-3">
-                              <Users size={16} className="text-primary" />
-                              <div>
-                                <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
-                              </div>
-                            </div>
-                            <select
-                              id="meeting-attendees"
-                              value={contact.attendees}
-                              onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
-                              className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                              required={selectedRoomOptions.length > 0}
+                          {breakfastOptionAvailable ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextDeclined = breakfastChoice !== 'declined';
+                                setBreakfastChoice(nextDeclined ? 'declined' : null);
+                                setSelectedRoomOptions([]);
+                              }}
+                              className={`flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left text-xs font-medium transition-colors ${
+                                breakfastChoice === 'declined'
+                                  ? 'text-primary'
+                                  : 'text-gray-500 hover:text-gray-700'
+                              }`}
                             >
-                              <option value="">Choisir</option>
-                              {roomAttendeeOptions.map((count) => (
-                                <option key={`meeting-attendees-hourly-${count}`} value={count}>
-                                  {count}
-                                </option>
-                              ))}
-                            </select>
+                              <span className={`flex h-4 w-4 shrink-0 rounded-[4px] border ${
+                                breakfastChoice === 'declined'
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-300 bg-white'
+                              }`} />
+                              Je ne souhaite pas prendre d&apos;option petit déjeuner
+                            </button>
+                          ) : null}
+
+                        </div>
+                      </>
+                    ) : roomBookingMode === 'hourly' ? (
+                      <>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                            {roomDetailsLocked ? (
+                              <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 lg:order-2">
+                                <div className="flex items-start gap-3">
+                                  <Users size={16} className="text-primary" />
+                                  <div>
+                                    <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                                  </div>
+                                </div>
+                                <div className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-400">
+                                  Choisir
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex min-h-[108px] flex-col justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 lg:order-2">
+                                <div className="flex items-start gap-3">
+                                  <Users size={16} className="text-primary" />
+                                  <div>
+                                    <p className="text-sm font-bold text-gray-900">Nombre de personnes</p>
+                                  </div>
+                                </div>
+                                <select
+                                  id="meeting-attendees"
+                                  value={contact.attendees}
+                                  onChange={(event) => setContact((current) => ({...current, attendees: event.target.value}))}
+                                  className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                                  required={selectedRoomOptions.length > 0}
+                                >
+                                  <option value="">Choisir</option>
+                                  {roomAttendeeOptions.map((count) => (
+                                    <option key={`meeting-attendees-hourly-${count}`} value={count}>
+                                      {count}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={breakfastChoice === 'declined' || !breakfastOptionAvailable}
+                              onClick={() => {
+                                if (!breakfastOptionAvailable) {
+                                  return;
+                                }
+
+                                const nextSelected = !breakfastSelected;
+                                setBreakfastChoice(nextSelected ? 'selected' : null);
+                                setSelectedRoomOptions(nextSelected ? [halfDayPreviewOption] : []);
+                              }}
+                              className={`min-h-[108px] rounded-xl border px-4 py-3 text-left text-sm transition-colors lg:order-1 ${
+                                breakfastChoice === 'declined'
+                                  ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-55'
+                                : !breakfastOptionAvailable
+                                  ? 'border-gray-200 bg-gray-50 text-gray-900 opacity-55'
+                                : breakfastSelected
+                                    ? 'border-primary bg-primary text-white shadow-md'
+                                  : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <Coffee
+                                  size={16}
+                                  className={
+                                    breakfastChoice === 'declined'
+                                      ? 'text-gray-400'
+                                      : breakfastOptionAvailable && breakfastSelected
+                                      ? 'text-white'
+                                      : 'text-primary'
+                                  }
+                                />
+                                <div>
+                                  <p className={`text-sm font-bold ${
+                                    breakfastChoice === 'declined'
+                                      ? 'text-gray-400'
+                                      : breakfastOptionAvailable && breakfastSelected
+                                      ? 'text-white'
+                                    : 'text-gray-900'
+                                  }`}>
+                                    {halfDayPreviewTitle}
+                                  </p>
+                                  {halfDayPreviewPrice ? (
+                                    <p className={`mt-0.5 text-xs font-medium ${
+                                      breakfastChoice === 'declined'
+                                        ? 'text-gray-400'
+                                        : breakfastOptionAvailable && breakfastSelected
+                                        ? 'text-white/80'
+                                        : 'text-gray-500'
+                                    }`}>
+                                      {halfDayPreviewPrice}
+                                    </p>
+                                  ) : null}
+                                  {!breakfastOptionAvailable ? (
+                                    roomStartTime ? (
+                                      <p className="mt-2 text-xs font-medium text-gray-400">
+                                        Disponible uniquement pour un début entre 9h et 11h.
+                                      </p>
+                                    ) : null
+                                  ) : null}
+                                </div>
+                              </div>
+                            </button>
                           </div>
-                        )}
-                      </div>
+
+                          {breakfastOptionAvailable ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextDeclined = breakfastChoice !== 'declined';
+                                setBreakfastChoice(nextDeclined ? 'declined' : null);
+                                setSelectedRoomOptions([]);
+                              }}
+                              className={`flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left text-xs font-medium transition-colors ${
+                                breakfastChoice === 'declined'
+                                  ? 'text-primary'
+                                  : 'text-gray-500 hover:text-gray-700'
+                              }`}
+                            >
+                              <span className={`flex h-4 w-4 shrink-0 rounded-[4px] border ${
+                                breakfastChoice === 'declined'
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-300 bg-white'
+                              }`} />
+                              Je ne souhaite pas prendre d&apos;option petit déjeuner
+                            </button>
+                          ) : null}
+
+                        </div>
+                      </>
                     ) : (
                       <div className={roomDetailsLocked ? 'pointer-events-none opacity-55' : ''}>
                         {availableRoomOptions.length > 0 ? (
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            {availableRoomOptions.map((option) => {
-                              const checked = selectedRoomOptions.includes(option);
-                              const [optionTitle, optionPrice] = option.split(' : ');
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              {availableRoomOptions.map((option) => {
+                                const checked = selectedRoomOptions.includes(option);
+                                const [optionTitle, optionPrice] = option.split(' : ');
+                                const isDayWithoutOptions = roomBookingMode === 'day' && dayOptionsChoice;
 
-                              return (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
+                                return (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    disabled={isDayWithoutOptions}
+                                    onClick={() => {
                                     setSelectedRoomOptions((current) =>
                                       checked ? current.filter((item) => item !== option) : [...current, option],
                                     );
+                                    setDayOptionsChoice(false);
                                   }}
-                                  className={`rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
-                                    checked
-                                      ? 'border-primary bg-primary text-white shadow-md'
-                                      : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
-                                  }`}
-                                >
-                                  <p className={`font-bold ${checked ? 'text-white' : 'text-gray-900'}`}>{optionTitle}</p>
-                                  {optionPrice ? (
-                                    <p className={`mt-1 text-xs font-medium ${checked ? 'text-white/80' : 'text-gray-500'}`}>{optionPrice}</p>
-                                  ) : null}
-                                </button>
-                              );
-                            })}
+                                    className={`rounded-xl border px-4 py-4 text-left text-sm transition-colors ${
+                                      isDayWithoutOptions
+                                        ? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-55'
+                                        :
+                                      checked
+                                        ? 'border-primary bg-primary text-white shadow-md'
+                                        : 'border-gray-200 bg-gray-50 text-gray-900 hover:border-primary/30 hover:bg-white'
+                                    }`}
+                                  >
+                                    <span className="min-w-0 flex-1">
+                                      <span className={`block font-bold ${
+                                        isDayWithoutOptions ? 'text-gray-400' : checked ? 'text-white' : 'text-gray-900'
+                                      }`}>{optionTitle}</span>
+                                      {optionPrice ? (
+                                        <span className={`mt-0.5 block text-xs font-medium ${
+                                          isDayWithoutOptions ? 'text-gray-400' : checked ? 'text-white/80' : 'text-gray-500'
+                                        }`}>{optionPrice}</span>
+                                      ) : null}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {roomBookingMode === 'day' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDayOptionsChoice((current) => {
+                                    const nextValue = !current;
+
+                                    if (nextValue) {
+                                      setSelectedRoomOptions([]);
+                                    }
+
+                                    return nextValue;
+                                  });
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-xl px-1 py-2 text-left text-xs font-medium transition-colors ${
+                                  dayOptionsChoice
+                                    ? 'text-primary'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                              >
+                                <span className={`flex h-4 w-4 shrink-0 rounded-[4px] border ${
+                                  dayOptionsChoice
+                                    ? 'border-primary bg-primary'
+                                    : 'border-gray-300 bg-white'
+                                }`} />
+                                Je continue sans prendre d&apos;option
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
 
@@ -1400,7 +1568,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
                     <button
                       type="button"
-                      disabled={!roomSelectionReady || !roomAttendeesReady}
+                      disabled={!roomSelectionReady || !roomAttendeesReady || !breakfastDecisionReady}
                       onClick={() => {
                         setSubmitState({status: 'idle', message: ''});
                         setFormStep(5);
@@ -1670,7 +1838,7 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           height: 'auto',
                         }}
                     transition={{duration: 0.25}}
-                    className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ${
+                    className={`rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-3 shadow-sm sm:p-5 ${
                       isMobileRoomContactFlow ? 'overflow-hidden' : ''
                     } ${isMobileRoomContactFlow && !showMobileRoomContactStep ? 'pointer-events-none border-transparent p-0 shadow-none' : ''}`}
                     aria-hidden={isMobileRoomContactFlow && !showMobileRoomContactStep}
