@@ -267,38 +267,41 @@ function buildReservationText({
   }
 
   if (reservationType === 'salle' && roomBooking?.duration) {
-    lines.push(`Format choisi : ${roomBooking.duration}`);
-  }
-
-  if (reservationType === 'salle' && roomBooking?.included) {
-    lines.push(`Inclus dans la formule : ${roomBooking.included}`);
+    lines.push(`Format choisi : ${formatRoomBookingDuration(roomBooking.duration, requestedTime)}`);
   }
 
   if (reservationType === 'salle' && roomBooking?.options.length) {
-    lines.push(`Options souhaitées : ${roomBooking.options.join(', ')}`);
+    lines.push(`Options souhaitées : ${formatRoomOptions(roomBooking.options).join(', ')}`);
   }
 
   if (reservationType === 'salle' && roomBooking?.pricing?.lines.length) {
     lines.push('', 'Récapitulatif tarifaire :');
 
-    roomBooking.pricing.lines.forEach((line) => {
-      lines.push(`- ${line.label} : ${line.amountHt}`);
+    const pricingRows = roomBooking.pricing.lines.map((line) => ({
+      left: line.label,
+      right: line.amountHt,
+      detail: line.detail,
+    }));
+    const leftColumnWidth = pricingRows.reduce((max, row) => Math.max(max, row.left.length), 0);
 
-      if (line.detail) {
-        lines.push(`  ${line.detail}`);
+    pricingRows.forEach((row) => {
+      lines.push(`${row.left.padEnd(leftColumnWidth, ' ')}  ${row.right}`);
+
+      if (row.detail) {
+        lines.push(`${' '.repeat(leftColumnWidth)}  ${row.detail}`);
       }
     });
 
     if (roomBooking.pricing.totalHt) {
-      lines.push(`Total HT : ${roomBooking.pricing.totalHt}`);
+      lines.push(`${'Total HT'.padEnd(leftColumnWidth, ' ')}  ${roomBooking.pricing.totalHt}`);
     }
 
     if (roomBooking.pricing.vatAmount) {
-      lines.push(`TVA (20 %) : ${roomBooking.pricing.vatAmount}`);
+      lines.push(`${'TVA (20 %)'.padEnd(leftColumnWidth, ' ')}  ${roomBooking.pricing.vatAmount}`);
     }
 
     if (roomBooking.pricing.totalTtc) {
-      lines.push(`Total TTC : ${roomBooking.pricing.totalTtc}`);
+      lines.push(`${'Total TTC'.padEnd(leftColumnWidth, ' ')}  ${roomBooking.pricing.totalTtc}`);
     }
   }
 
@@ -328,14 +331,81 @@ function buildReservationText({
 }
 
 function buildReservationHtml(payload: ReservationRequestPayload) {
-  const text = buildReservationText(payload);
+  const roomBooking = payload.roomBooking;
+  const roomBookingDuration = payload.reservationType === 'salle' && roomBooking?.duration
+    ? formatRoomBookingDuration(roomBooking.duration, payload.requestedTime)
+    : '';
+  const roomOptions = payload.reservationType === 'salle' && roomBooking?.options.length
+    ? formatRoomOptions(roomBooking.options)
+    : [];
+  const pricingRows = payload.reservationType === 'salle' && roomBooking?.pricing?.lines.length
+    ? roomBooking.pricing.lines.map((line) => `
+        <tr>
+          <td style="padding:8px 12px 8px 0;vertical-align:top;font-size:14px;color:#111827;">
+            <div>${escapeHtml(line.label)}</div>
+            ${line.detail ? `<div style="margin-top:4px;font-size:12px;color:#6b7280;">${escapeHtml(line.detail)}</div>` : ''}
+          </td>
+          <td style="padding:8px 0;text-align:right;vertical-align:top;font-size:14px;font-weight:600;color:#111827;white-space:nowrap;">${escapeHtml(line.amountHt)}</td>
+        </tr>
+      `).join('')
+    : '';
 
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
       <h1 style="font-size:20px;margin:0 0 16px">Nouvelle demande depuis le site</h1>
-      <pre style="white-space:pre-wrap;font-family:Arial,sans-serif;margin:0">${escapeHtml(text)}</pre>
+      <div style="font-size:14px;">
+        <p style="margin:0 0 6px;"><strong>Type de demande :</strong> ${escapeHtml({
+          bureau: 'Bureau privé',
+          salle: 'Salle de réunion',
+          event: "Événement d'entreprise",
+        }[payload.reservationType])}</p>
+        <p style="margin:0 0 6px;"><strong>Espace demandé :</strong> ${escapeHtml(payload.offerLabel)}</p>
+        <p style="margin:0 0 6px;"><strong>Date souhaitée :</strong> ${escapeHtml(payload.requestedDate)}</p>
+        <p style="margin:0 0 6px;"><strong>${payload.reservationType === 'salle' ? 'Créneau souhaité' : 'Heure souhaitée'} :</strong> ${escapeHtml(payload.requestedTime)}</p>
+        ${roomBookingDuration ? `<p style="margin:0 0 6px;"><strong>Format choisi :</strong> ${escapeHtml(roomBookingDuration)}</p>` : ''}
+        ${roomOptions.length ? `<p style="margin:0 0 6px;"><strong>Options souhaitées :</strong> ${escapeHtml(roomOptions.join(', '))}</p>` : ''}
+        <p style="margin:0 0 6px;"><strong>Email :</strong> ${escapeHtml(payload.contact.email)}</p>
+        <p style="margin:0 0 6px;"><strong>Téléphone :</strong> ${escapeHtml(payload.contact.phone)}</p>
+        ${payload.contact.company ? `<p style="margin:0 0 6px;"><strong>Entreprise :</strong> ${escapeHtml(payload.contact.company)}</p>` : ''}
+        ${payload.contact.fullName ? `<p style="margin:0 0 6px;"><strong>Nom :</strong> ${escapeHtml(payload.contact.fullName)}</p>` : ''}
+        ${payload.contact.activity ? `<p style="margin:0 0 6px;"><strong>Activité / besoin :</strong> ${escapeHtml(payload.contact.activity)}</p>` : ''}
+        ${payload.contact.attendees ? `<p style="margin:0 0 6px;"><strong>Participants / postes :</strong> ${escapeHtml(payload.contact.attendees)}</p>` : ''}
+        ${payload.contact.notes ? `<p style="margin:0 0 6px;"><strong>Message :</strong> ${escapeHtml(payload.contact.notes)}</p>` : ''}
+      </div>
+
+      ${pricingRows ? `
+        <div style="margin-top:20px;">
+          <h2 style="margin:0 0 10px;font-size:16px;">Récapitulatif tarifaire</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>
+              ${pricingRows}
+              ${roomBooking?.pricing?.totalHt ? `<tr><td style="padding:10px 12px 0 0;border-top:1px solid #e5e7eb;font-size:14px;font-weight:700;">Total HT</td><td style="padding:10px 0 0;border-top:1px solid #e5e7eb;text-align:right;font-size:14px;font-weight:700;white-space:nowrap;">${escapeHtml(roomBooking.pricing.totalHt)}</td></tr>` : ''}
+              ${roomBooking?.pricing?.vatAmount ? `<tr><td style="padding:8px 12px 0 0;font-size:14px;font-weight:600;">TVA (20 %)</td><td style="padding:8px 0 0;text-align:right;font-size:14px;font-weight:600;white-space:nowrap;">${escapeHtml(roomBooking.pricing.vatAmount)}</td></tr>` : ''}
+              ${roomBooking?.pricing?.totalTtc ? `<tr><td style="padding:10px 12px 0 0;border-top:1px solid #e5e7eb;font-size:15px;font-weight:700;">Total TTC</td><td style="padding:10px 0 0;border-top:1px solid #e5e7eb;text-align:right;font-size:15px;font-weight:700;white-space:nowrap;">${escapeHtml(roomBooking.pricing.totalTtc)}</td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
     </div>
   `.trim();
+}
+
+function formatRoomBookingDuration(duration: string, requestedTime: string) {
+  const cleanDuration = duration.split(' - ')[0]?.trim() ?? '';
+
+  if (!cleanDuration) {
+    return '';
+  }
+
+  if (cleanDuration.toLowerCase().includes('demi-journ')) {
+    return `${cleanDuration} ${requestedTime}`.trim();
+  }
+
+  return cleanDuration;
+}
+
+function formatRoomOptions(options: string[]) {
+  return options.map((option) => option.split(' : ')[0]?.trim() ?? option).filter(Boolean);
 }
 
 function normalizeText(value: unknown) {
