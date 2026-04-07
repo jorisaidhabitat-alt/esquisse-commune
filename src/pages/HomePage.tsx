@@ -16,7 +16,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
-import type {ComponentType, CSSProperties, ReactNode, TouchEvent} from 'react';
+import type {ComponentType, ImgHTMLAttributes, ReactNode, TouchEvent} from 'react';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {desks} from '../data/desks';
 import {galleryData} from '../data/gallery';
@@ -29,8 +29,10 @@ import {siteConfig} from '../data/site';
 import {applyJsonLd, applySeo} from '../lib/seo';
 import type {ReservationPrefill} from '../components/ReservationForm';
 
+const loadReservationForm = () => import('../components/ReservationForm');
+
 const ReservationForm = lazy(async () => {
-  const module = await import('../components/ReservationForm');
+  const module = await loadReservationForm();
   return {default: module.ReservationForm as ComponentType<{prefill: ReservationPrefill}>};
 });
 
@@ -125,16 +127,20 @@ const sharedSpaces = Object.entries(galleryData);
 export function HomePage() {
   const [selectedSharedSpace, setSelectedSharedSpace] = useState<{key: string; index: number} | null>(null);
   const [sharedSpaceCycleReset, setSharedSpaceCycleReset] = useState(0);
-  const [isSharedSpacesDesktop, setIsSharedSpacesDesktop] = useState(false);
+  const [isSharedSpacesDesktop, setIsSharedSpacesDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : false,
+  );
   const [hasPointerHover, setHasPointerHover] = useState(false);
   const [openDeskChargesInfo, setOpenDeskChargesInfo] = useState<string | null>(null);
   const [openRoomHighlight, setOpenRoomHighlight] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
+  const [shouldLoadReservationForm, setShouldLoadReservationForm] = useState(false);
   const [deskImageIndexes, setDeskImageIndexes] = useState<Record<string, number>>({});
   const [roomImageIndexes, setRoomImageIndexes] = useState<Record<string, number>>({});
   const [roomCardSelections, setRoomCardSelections] = useState<Record<string, {mode: RoomBookingMode | null; options: string[]}>>({});
   const deskTouchStartX = useRef<Record<string, number>>({});
   const deskTouchStartY = useRef<Record<string, number>>({});
+  const reservationSectionRef = useRef<HTMLElement | null>(null);
 
   const getDeskAmount = (value: string) => Number(value.replace(/[^\d]/g, '')) || 0;
 
@@ -234,7 +240,36 @@ export function HomePage() {
     return () => mediaQuery.removeEventListener('change', syncSharedSpacesViewport);
   }, []);
 
+  useEffect(() => {
+    if (shouldLoadReservationForm || !reservationSectionRef.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadReservationForm(true);
+          observer.disconnect();
+        }
+      },
+      {rootMargin: '600px 0px'},
+    );
+
+    observer.observe(reservationSectionRef.current);
+
+    return () => observer.disconnect();
+  }, [shouldLoadReservationForm]);
+
+  useEffect(() => {
+    if (!shouldLoadReservationForm) {
+      return;
+    }
+
+    void loadReservationForm();
+  }, [shouldLoadReservationForm]);
+
   const scrollToReservation = () => {
+    setShouldLoadReservationForm(true);
     document.getElementById('reservation')?.scrollIntoView({behavior: 'smooth', block: 'start'});
   };
 
@@ -377,31 +412,52 @@ export function HomePage() {
 
           <div className="relative mx-auto w-full max-w-[620px]">
             <div className="grid grid-cols-3 gap-3 md:gap-4">
-              {heroImages.map((image, index) => (
-                <motion.div
-                  key={image.src}
-                  initial={{opacity: 0, y: 28}}
-                  whileInView={{opacity: 1, y: 0}}
-                  viewport={{once: true}}
-                  transition={{duration: 0.6, delay: 0.15 * index}}
-                  className={`relative aspect-[196/460] overflow-hidden border border-primary/20 bg-[#f7f5ef] md:h-[460px] md:aspect-auto ${
-                    index === 1
-                      ? 'rounded-[0_3.75rem_0_3.75rem] md:rounded-[0_5.5rem_0_5.5rem]'
-                      : 'rounded-[3.75rem_0_3.75rem_0] md:rounded-[5.5rem_0_5.5rem_0]'
-                  }`}
-                >
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="h-full w-full object-cover"
-                    style={'objectPosition' in image ? {objectPosition: image.objectPosition} : undefined}
-                    referrerPolicy="no-referrer"
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    fetchPriority={index === 0 ? 'high' : 'auto'}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-white/10" />
-                </motion.div>
-              ))}
+              {heroImages.map((image, index) => {
+                const imageCardClassName = `relative aspect-[196/460] overflow-hidden border border-primary/20 bg-[#f7f5ef] md:h-[460px] md:aspect-auto ${
+                  index === 1
+                    ? 'rounded-[0_3.75rem_0_3.75rem] md:rounded-[0_5.5rem_0_5.5rem]'
+                    : 'rounded-[3.75rem_0_3.75rem_0] md:rounded-[5.5rem_0_5.5rem_0]'
+                }`;
+                const imageNode = (
+                  <>
+                    <OptimizedImage
+                      src={image.src}
+                      alt={image.alt}
+                      className="h-full w-full object-cover"
+                      style={'objectPosition' in image ? {objectPosition: image.objectPosition} : undefined}
+                      referrerPolicy="no-referrer"
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={index === 0 ? 'high' : 'auto'}
+                      decoding={index === 0 ? 'sync' : 'async'}
+                      width={index === 0 ? 999 : undefined}
+                      height={index === 0 ? 1500 : undefined}
+                      sizes={index === 0 ? '(min-width: 768px) 196px, 33vw' : undefined}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/12 via-transparent to-white/10" />
+                  </>
+                );
+
+                if (index === 0) {
+                  return (
+                    <div key={image.src} className={imageCardClassName}>
+                      {imageNode}
+                    </div>
+                  );
+                }
+
+                return (
+                  <motion.div
+                    key={image.src}
+                    initial={{opacity: 0, y: 28}}
+                    whileInView={{opacity: 1, y: 0}}
+                    viewport={{once: true}}
+                    transition={{duration: 0.6, delay: 0.15 * index}}
+                    className={imageCardClassName}
+                  >
+                    {imageNode}
+                  </motion.div>
+                );
+              })}
             </div>
 
             <motion.div
@@ -445,25 +501,27 @@ export function HomePage() {
                   onTouchEnd={(event) => handleDeskTouchEnd(desk.id, desk.images.length, event)}
                   style={{touchAction: 'pan-y'}}
                 >
-                  {desk.images.map((image, index) => (
-                    <div
-                      key={`${desk.id}-${image}`}
-                      className={`absolute inset-0 overflow-hidden rounded-t-3xl transition-opacity duration-200 ease-out [backface-visibility:hidden] sm:duration-700 sm:ease-out ${
-                        index === (deskImageIndexes[desk.id] ?? 0) ? 'opacity-100' : 'opacity-0'
-                      }`}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`${desk.id}-${desk.images[deskImageIndexes[desk.id] ?? 0]}`}
+                      initial={{opacity: 0}}
+                      animate={{opacity: 1}}
+                      exit={{opacity: 0}}
+                      transition={{duration: 0.35, ease: 'easeOut'}}
+                      className="absolute inset-0 overflow-hidden rounded-t-3xl"
                     >
-                      <img
-                        src={image}
-                        alt={`${desk.name} ${index + 1}`}
-                        className={`h-full w-full rounded-t-3xl object-cover [backface-visibility:hidden] ${
+                      <OptimizedImage
+                        src={desk.images[deskImageIndexes[desk.id] ?? 0]}
+                        alt={`${desk.name} ${(deskImageIndexes[desk.id] ?? 0) + 1}`}
+                        className={`h-full w-full rounded-t-3xl object-cover ${
                           !desk.available ? 'grayscale' : ''
                         }`}
                         referrerPolicy="no-referrer"
                         loading="lazy"
                         decoding="async"
                       />
-                    </div>
-                  ))}
+                    </motion.div>
+                  </AnimatePresence>
                   <button
                     type="button"
                     aria-label={`Photo précédente pour ${desk.name}`}
@@ -626,19 +684,27 @@ export function HomePage() {
                 } ${index !== rooms.length - 1 ? 'mb-20 md:mb-32' : ''} ${!room.available ? 'opacity-80' : ''}`}
               >
                 <div className="relative z-10 h-[340px] w-full overflow-hidden rounded-3xl shadow-2xl sm:h-[400px] lg:h-[600px] lg:w-2/3">
-                  {roomImages.map((image, imageIndex) => (
-                    <img
-                      key={`${room.id}-${image}`}
-                      src={image}
-                      alt={`${room.name} ${imageIndex + 1}`}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                        imageIndex === activeRoomImageIndex ? 'opacity-100' : 'opacity-0'
-                      } ${room.available ? 'hover:scale-105' : 'grayscale'}`}
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ))}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={`${room.id}-${roomImages[activeRoomImageIndex]}`}
+                      initial={{opacity: 0}}
+                      animate={{opacity: 1}}
+                      exit={{opacity: 0}}
+                      transition={{duration: 0.4, ease: 'easeOut'}}
+                      className="absolute inset-0"
+                    >
+                      <OptimizedImage
+                        src={roomImages[activeRoomImageIndex]}
+                        alt={`${room.name} ${activeRoomImageIndex + 1}`}
+                        className={`absolute inset-0 h-full w-full object-cover ${
+                          room.available ? 'hover:scale-105' : 'grayscale'
+                        }`}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                   <div className="absolute left-4 top-4 right-4 flex flex-wrap gap-2 sm:left-6 sm:top-6 sm:right-6">
                     <div className={`flex flex-wrap gap-2 ${room.id === 'board' ? 'sm:ml-auto sm:justify-end' : ''}`}>
@@ -999,7 +1065,8 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="md:hidden">
+          {!isSharedSpacesDesktop ? (
+          <div>
             <div className="mb-6 flex flex-wrap justify-center gap-2.5">
               {sharedSpaces.map(([key, gallery], index) => {
                 const isActive = desktopSharedSpaceKey === key;
@@ -1035,7 +1102,7 @@ export function HomePage() {
                 className="space-y-5"
               >
                 <div className="relative min-h-[19rem] overflow-hidden rounded-3xl shadow-[0_28px_60px_rgba(3,18,61,0.24)]">
-                  <img
+                  <OptimizedImage
                     src={desktopSharedSpaceImages[0]}
                     alt={desktopSharedSpace.title}
                     className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
@@ -1056,7 +1123,7 @@ export function HomePage() {
                       key={`${desktopSharedSpaceKey}-mobile-detail-${image}`}
                       className="relative min-h-[11.5rem] overflow-hidden rounded-3xl shadow-[0_20px_45px_rgba(3,18,61,0.18)]"
                     >
-                      <img
+                      <OptimizedImage
                         src={image}
                         alt={`${desktopSharedSpace.title} - détail ${imageIndex + 2}`}
                         className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
@@ -1089,8 +1156,10 @@ export function HomePage() {
               </motion.div>
             </AnimatePresence>
           </div>
+          ) : null}
 
-          <div className="hidden md:block">
+          {isSharedSpacesDesktop ? (
+          <div>
             <div className="mb-8 flex flex-wrap items-center justify-center gap-3">
               {sharedSpaces.map(([key, gallery], index) => {
                 const isActive = desktopSharedSpaceKey === key;
@@ -1126,7 +1195,7 @@ export function HomePage() {
                   className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(17rem,0.95fr)]"
                 >
                   <div className="relative min-h-[36rem] overflow-hidden rounded-3xl shadow-[0_38px_80px_rgba(3,18,61,0.28)]">
-                    <img
+                    <OptimizedImage
                       src={desktopSharedSpaceImages[0]}
                       alt={desktopSharedSpace.title}
                       className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
@@ -1147,7 +1216,7 @@ export function HomePage() {
                         key={`${desktopSharedSpaceKey}-detail-${image}`}
                         className="relative min-h-[17.25rem] overflow-hidden rounded-3xl shadow-[0_28px_60px_rgba(3,18,61,0.22)]"
                       >
-                        <img
+                        <OptimizedImage
                           src={image}
                           alt={`${desktopSharedSpace.title} - détail ${imageIndex + 2}`}
                           className="shared-space-image-breathe absolute inset-0 h-full w-full object-cover"
@@ -1208,6 +1277,7 @@ export function HomePage() {
               </button>
             </div>
           </div>
+          ) : null}
 
           <div className="hidden">
             <AnimatePresence mode="wait" initial={false}>
@@ -1373,7 +1443,7 @@ export function HomePage() {
                 <div className="absolute left-0 top-1/2 hidden h-72 w-px -translate-y-1/2 bg-gray-200 lg:block" />
                 <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
                   <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec] md:mt-2 md:self-start">
-                    <img
+                    <OptimizedImage
                       src="/marika.png"
                       alt="Portrait de Marika"
                       className="h-36 w-36 object-cover md:h-44 md:w-44"
@@ -1410,16 +1480,22 @@ export function HomePage() {
         </div>
       </section>
 
-      <section id="reservation" className="bg-primary py-24 md:py-32">
+      <section id="reservation" ref={reservationSectionRef} className="bg-primary py-24 md:py-32">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <div className="mb-10 text-left md:mb-12 md:text-center">
             <h2 className="text-center font-serif text-3xl font-black text-white md:text-5xl">Demander une visite de bureau près de Rennes</h2>
           </div>
 
           <div className="mx-auto max-w-6xl">
-            <Suspense fallback={<div className="rounded-3xl bg-white/10 p-8 text-center text-white/80">Chargement du formulaire…</div>}>
-              <ReservationForm prefill={prefill} />
-            </Suspense>
+            {shouldLoadReservationForm ? (
+              <Suspense fallback={<div className="rounded-3xl bg-white/10 p-8 text-center text-white/80">Chargement du formulaire…</div>}>
+                <ReservationForm prefill={prefill} />
+              </Suspense>
+            ) : (
+              <div className="rounded-3xl bg-white/10 p-8 text-center text-white/80">
+                Le formulaire se charge à l’approche de cette section.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1454,6 +1530,21 @@ function Feature({icon, label}: {icon: ReactNode; label: string}) {
       </div>
       <span className="text-center text-xs leading-tight md:text-base">{label}</span>
     </div>
+  );
+}
+
+function OptimizedImage({src, alt, ...props}: ImgHTMLAttributes<HTMLImageElement>) {
+  if (!src || !alt) {
+    return null;
+  }
+
+  const optimizedSrc = src.replace(/\.(png|jpe?g|webp)$/i, '.avif');
+
+  return (
+    <picture>
+      <source srcSet={optimizedSrc} type="image/avif" />
+      <img src={src} alt={alt} {...props} />
+    </picture>
   );
 }
 

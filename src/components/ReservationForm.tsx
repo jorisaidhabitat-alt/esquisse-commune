@@ -384,19 +384,9 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
     frameOne = window.requestAnimationFrame(() => {
       frameTwo = window.requestAnimationFrame(() => {
-        const formTop = formContainerRef.current?.getBoundingClientRect().top;
-
-        if (typeof formTop !== 'number') {
-          return;
-        }
-
-        const mobileHeaderOffset = 80;
-        const extraTopSpacing = 28;
-        const targetTop = Math.max(0, window.scrollY + formTop - mobileHeaderOffset - extraTopSpacing);
-
-        window.scrollTo({
-          top: targetTop,
+        formContainerRef.current?.scrollIntoView({
           behavior: 'smooth',
+          block: 'start',
         });
       });
     });
@@ -652,9 +642,13 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   };
 
   return (
-    <div ref={formContainerRef} className={`mx-auto w-full rounded-3xl bg-[#F4F4F5] p-4 shadow-2xl transition-[max-width] duration-300 ease-out sm:p-6 md:p-8 ${
-      isWideStep ? 'max-w-6xl' : 'max-w-2xl'
-    }`}>
+    <div
+      ref={formContainerRef}
+      style={{scrollMarginTop: '108px'}}
+      className={`mx-auto w-full rounded-3xl bg-[#F4F4F5] p-4 shadow-2xl transition-[max-width] duration-300 ease-out sm:p-6 md:p-8 ${
+        isWideStep ? 'max-w-6xl' : 'max-w-2xl'
+      }`}
+    >
       <AnimatePresence mode="wait">
         {formStep === 1 && (
           <motion.div
