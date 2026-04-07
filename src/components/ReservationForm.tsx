@@ -1738,6 +1738,9 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                           <p className="mt-1 text-sm leading-relaxed text-gray-500">
                             Charges comprises dans le prix.
                           </p>
+                          <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                            Accès aux espaces partagés.
+                          </p>
                         </div>
                       </div>
                     ) : null}
@@ -1750,12 +1753,6 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                         </>
                       </div>
                     ) : null}
-
-                    {reservationType === 'bureau' && (
-                      <p className="mt-4 text-xs font-medium text-primary">
-                        Cette demande est organisée pour qualifier votre besoin et visiter le lieu.
-                      </p>
-                    )}
 
                     {reservationType === 'salle' ? (
                   <div className="mt-3 space-y-3">

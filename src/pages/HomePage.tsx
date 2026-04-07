@@ -550,7 +550,10 @@ export function HomePage() {
                   )}
                 </div>
                 <div className="flex flex-1 flex-col p-6 md:p-8">
-                  <h3 className="mb-5 font-serif text-[1.35rem] font-bold text-gray-900 sm:text-2xl">{desk.name}</h3>
+                  <div className="mb-5">
+                    <h3 className="font-serif text-[1.35rem] font-bold text-gray-900 sm:text-2xl">{desk.name}</h3>
+                    <p className="mt-2 text-sm font-medium text-primary/85">Accès aux espaces partagés</p>
+                  </div>
                   <div className="mb-7 grid grid-cols-2 gap-x-2 gap-y-4 text-sm text-gray-700">
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Maximize size={16} className="text-primary" /> <span>{desk.size}</span></div>
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Compass size={16} className="text-primary" /> <span>{desk.orientation}</span></div>
