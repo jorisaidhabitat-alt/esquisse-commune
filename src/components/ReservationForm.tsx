@@ -405,10 +405,10 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
         : selectedEventFormat?.title ?? "Événement d'entreprise";
   const selectedOfferImage =
     reservationType === 'bureau'
-      ? selectedDesk?.image ?? '/desks/bureau-6-1.webp'
+      ? selectedDesk?.image ?? '/desks/bureau-6-1.jpg'
       : reservationType === 'salle'
-        ? selectedRoom?.image ?? '/rooms/la-place-1.webp'
-        : '/gallery/salon-4.webp';
+        ? selectedRoom?.image ?? '/rooms/la-place-1.jpg'
+        : '/gallery/salon-4.jpg';
   const selectedOfferMeta =
     reservationType === 'bureau' && selectedDesk
       ? `${selectedDesk.capacity} • ${selectedDesk.size} • ${selectedDesk.price} • ${selectedDesk.orientation}`
@@ -670,14 +670,14 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
               <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <OfferButton
                   active={reservationType === 'bureau'}
-                  image="/desks/bureau-6-1.webp"
+                  image="/desks/bureau-6-1.jpg"
                   title="Bureaux privés"
                   description="Location mensuelle avec engagement d’un an renouvelable."
                   onClick={() => handleTypeSelect('bureau')}
                 />
                 <OfferButton
                   active={reservationType === 'salle'}
-                  image="/rooms/la-place-1.webp"
+                  image="/rooms/la-place-1.jpg"
                   title="Salle de réunion"
                   description="Réservation à l’heure pour vos rendez-vous, ateliers et comités."
                   onClick={() => handleTypeSelect('salle')}

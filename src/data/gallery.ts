@@ -12,9 +12,9 @@ export const galleryData = {
       'Lave-vaisselle',
     ],
     images: [
-      '/gallery/cafet-6.webp',
-      '/gallery/cafet-4.webp',
-      '/gallery/cafet-2.webp',
+      '/gallery/cafet-6.jpg',
+      '/gallery/cafet-4.jpg',
+      '/gallery/cafet-2.jpg',
     ],
   },
   pause: {
@@ -30,9 +30,9 @@ export const galleryData = {
       'Banquette assise',
     ],
     images: [
-      '/gallery/salon-4.webp',
-      '/gallery/salon-3.webp',
-      '/gallery/salon-1.webp',
+      '/gallery/salon-4.jpg',
+      '/gallery/salon-3.jpg',
+      '/gallery/salon-1.jpg',
     ],
   },
   call: {
@@ -47,11 +47,11 @@ export const galleryData = {
       'Support pour ordinateur portable',
     ],
     images: [
-      '/gallery/phonebox-3.webp',
-      '/gallery/phonebox-1.webp',
-      '/gallery/phonebox-5.webp',
-      '/gallery/phonebox-4.webp',
-      '/gallery/phonebox-2.webp',
+      '/gallery/phonebox-3.jpg',
+      '/gallery/phonebox-1.jpg',
+      '/gallery/phonebox-5.jpg',
+      '/gallery/phonebox-4.jpg',
+      '/gallery/phonebox-2.jpg',
     ],
   },
 } as const;

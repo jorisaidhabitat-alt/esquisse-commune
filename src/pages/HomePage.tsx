@@ -106,16 +106,16 @@ const roomComparisonHighlights = [
 
 const heroImages = [
   {
-    src: '/gallery/salon-3.webp',
+    src: '/gallery/salon-3.jpg',
     alt: 'Salle de pause partagée près de Rennes',
   },
   {
-    src: '/gallery/cafet-6.webp',
+    src: '/gallery/cafet-6.jpg',
     alt: 'Cuisine partagée près de Rennes',
     objectPosition: '64% center',
   },
   {
-    src: '/rooms/la-place-1.webp',
+    src: '/rooms/la-place-1.jpg',
     alt: 'Salle La Place à Chartres-de-Bretagne, proche de Rennes',
     objectPosition: '34% center',
   },
@@ -1444,7 +1444,7 @@ export function HomePage() {
                 <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
                   <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec] md:mt-2 md:self-start">
                     <OptimizedImage
-                      src="/marika.png"
+                      src="/marika.jpg"
                       alt="Portrait de Marika"
                       className="h-36 w-36 object-cover md:h-44 md:w-44"
                     />
@@ -1538,14 +1538,7 @@ function OptimizedImage({src, alt, ...props}: ImgHTMLAttributes<HTMLImageElement
     return null;
   }
 
-  const optimizedSrc = src.replace(/\.(png|jpe?g|webp)$/i, '.avif');
-
-  return (
-    <picture>
-      <source srcSet={optimizedSrc} type="image/avif" />
-      <img src={src} alt={alt} {...props} />
-    </picture>
-  );
+  return <img src={src} alt={alt} {...props} />;
 }
 
 function LocationCard({icon, title, description}: {icon: ReactNode; title: string; description: string}) {

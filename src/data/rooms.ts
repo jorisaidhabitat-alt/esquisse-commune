@@ -24,11 +24,11 @@ export const rooms: Room[] = [
   {
     id: 'atelier',
     name: "La Place",
-    image: "/rooms/la-place-1.webp",
+    image: "/rooms/la-place-1.jpg",
     images: [
-      "/rooms/la-place-1.webp",
-      "/rooms/la-place-2.webp",
-      "/rooms/la-place-3.webp"
+      "/rooms/la-place-1.jpg",
+      "/rooms/la-place-2.jpg",
+      "/rooms/la-place-3.jpg"
     ],
     priceHour: "25€",
     priceDay: "160€",
@@ -47,11 +47,11 @@ export const rooms: Room[] = [
   {
     id: 'board',
     name: "L'Annexe",
-    image: "/rooms/annexe-9.webp",
+    image: "/rooms/annexe-9.jpg",
     images: [
-      "/rooms/annexe-9.webp",
-      "/rooms/annexe-2.webp",
-      "/rooms/annexe-3.webp"
+      "/rooms/annexe-9.jpg",
+      "/rooms/annexe-2.jpg",
+      "/rooms/annexe-3.jpg"
     ],
     priceHour: "35€",
     priceDay: "210€",
