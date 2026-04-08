@@ -17,9 +17,9 @@ export const siteConfig = {
   legal: {
     publisherName: "Aid'Habitat",
     ownerAddress: {
-      street: '47 Avenue des Pays-Bas',
-      postalCode: '35200',
-      city: 'Rennes',
+      street: '16 rue Léo Lagrange',
+      postalCode: '35131',
+      city: 'Chartres-de-Bretagne',
     },
     legalForm: 'À compléter',
     shareCapital: '1000€',
