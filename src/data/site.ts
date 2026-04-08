@@ -22,7 +22,7 @@ export const siteConfig = {
       city: 'Rennes',
     },
     legalForm: 'À compléter',
-    shareCapital: 'À compléter',
+    shareCapital: '1000€',
     siren: '904170420',
     siret: '90417042000023',
     vatNumber: 'À compléter',

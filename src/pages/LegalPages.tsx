@@ -19,11 +19,9 @@ export function MentionsLegalesPage() {
       </Section>
 
       <Section title="Informations légales de l'entreprise">
-        <p><strong>Forme juridique :</strong> {siteConfig.legal.legalForm}</p>
         <p><strong>Capital social :</strong> {siteConfig.legal.shareCapital}</p>
         <p><strong>SIREN :</strong> {siteConfig.legal.siren}</p>
         <p><strong>SIRET :</strong> {siteConfig.legal.siret}</p>
-        <p><strong>TVA intracommunautaire :</strong> {siteConfig.legal.vatNumber}</p>
       </Section>
 
       <Section title="Responsable de publication">
@@ -42,14 +40,6 @@ export function MentionsLegalesPage() {
           et structure, est protégé par le droit d’auteur et le droit de la propriété intellectuelle.
           Toute reproduction, diffusion ou adaptation sans autorisation préalable est interdite.
         </p>
-      </Section>
-
-      <Section title="Mise à jour nécessaire">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          Les champs administratifs “forme juridique”, “capital social” et “TVA”
-          sont actuellement marqués à compléter. Ils doivent être remplacés
-          par les informations exactes de l’entreprise avant publication officielle.
-        </div>
       </Section>
     </LegalPageLayout>
   );
