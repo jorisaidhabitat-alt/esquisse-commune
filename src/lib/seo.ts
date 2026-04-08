@@ -96,6 +96,15 @@ export function renderSeoTags(
     .join('\n');
 }
 
+export function renderJsonLdTags(entries: ReadonlyArray<{id: string; data: Record<string, unknown>}>) {
+  return entries
+    .map(
+      ({id, data}) =>
+        `<script type="application/ld+json" data-seo-id="${escapeHtml(id)}">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`,
+    )
+    .join('\n');
+}
+
 export function applyJsonLd(id: string, data: Record<string, unknown>) {
   let script = document.head.querySelector<HTMLScriptElement>(`script[data-seo-id="${id}"]`);
 

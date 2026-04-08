@@ -4,6 +4,7 @@ const WEBFLOW_API_BASE = 'https://api.webflow.com/v2';
 
 const FIELD_SLUGS = {
   h1: process.env.WEBFLOW_BLOG_H1_FIELD ?? 'h1',
+  author: process.env.WEBFLOW_BLOG_AUTHOR_FIELD ?? 'author',
   excerpt: process.env.WEBFLOW_BLOG_EXCERPT_FIELD ?? 'excerpt',
   contentHtml: process.env.WEBFLOW_BLOG_CONTENT_FIELD ?? 'content',
   coverImage: process.env.WEBFLOW_BLOG_COVER_IMAGE_FIELD ?? 'cover-image',
@@ -78,6 +79,7 @@ function mapBlogPost(item: any): BlogPost {
     slug: fieldData.slug ?? '',
     title: fieldData.name ?? 'Article',
     displayTitle: fieldData[FIELD_SLUGS.h1] ?? fieldData.name ?? 'Article',
+    author: fieldData[FIELD_SLUGS.author] ?? 'L’esquisse commune',
     excerpt: fieldData[FIELD_SLUGS.excerpt] ?? getExcerptFallback(contentHtml),
     contentHtml,
     coverImage: getAssetUrl(fieldData[FIELD_SLUGS.coverImage]),

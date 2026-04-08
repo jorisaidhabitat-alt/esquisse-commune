@@ -5,25 +5,31 @@ import {siteConfig} from '../data/site';
 import {
   formatBlogDate,
   getBlogIndexDataUrl,
+  getBlogIndexJsonLd,
   getBlogIndexSeo,
+  getLocalBlogPosts,
   getBlogPostPath,
   getInitialBlogIndexData,
+  mergeWithLocalBlogPosts,
   type BlogPostSummary,
 } from '../lib/blog';
 import {useBlogPageData} from '../lib/blog-context';
-import {applySeo} from '../lib/seo';
+import {applyJsonLd, applySeo} from '../lib/seo';
 
 export function BlogIndexPage() {
   const contextData = useBlogPageData();
   const contextPosts = contextData?.kind === 'index' ? contextData.posts : null;
-  const [posts, setPosts] = useState<BlogPostSummary[]>(() => contextPosts ?? getInitialBlogIndexData() ?? []);
+  const [posts, setPosts] = useState<BlogPostSummary[]>(
+    () => mergeWithLocalBlogPosts(contextPosts ?? getInitialBlogIndexData() ?? getLocalBlogPosts()),
+  );
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>(
-    contextPosts || getInitialBlogIndexData() ? 'idle' : 'loading',
+    contextPosts || getInitialBlogIndexData() || getLocalBlogPosts().length > 0 ? 'idle' : 'loading',
   );
 
   useEffect(() => {
     applySeo(getBlogIndexSeo());
-  }, []);
+    getBlogIndexJsonLd(posts).forEach(({id, data}) => applyJsonLd(id, data));
+  }, [posts]);
 
   useEffect(() => {
     if (posts.length > 0) {
@@ -43,12 +49,19 @@ export function BlogIndexPage() {
       })
       .then((nextPosts) => {
         if (!ignore) {
-          setPosts(nextPosts);
+          setPosts(mergeWithLocalBlogPosts(nextPosts));
           setStatus('idle');
         }
       })
       .catch(() => {
         if (!ignore) {
+          const localPosts = getLocalBlogPosts();
+          if (localPosts.length > 0) {
+            setPosts(localPosts);
+            setStatus('idle');
+            return;
+          }
+
           setStatus('error');
         }
       });
@@ -62,9 +75,8 @@ export function BlogIndexPage() {
     <main className="bg-gray-50">
       <section className="mx-auto max-w-[1400px] px-6 pb-20 pt-16 md:px-12 md:pb-24 md:pt-24">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">Blog</p>
-          <h1 className="mt-5 font-serif text-4xl font-black leading-tight text-gray-900 md:text-6xl">
-            Ressources autour de la location de bureaux à Rennes
+          <h1 className="font-serif text-4xl font-black leading-tight text-gray-900 md:text-6xl">
+            Blog d&#39;espace professionnel
           </h1>
           <p className="mt-6 text-base leading-relaxed text-gray-600 md:text-lg">
             Conseils, actualités et retours d’expérience sur les bureaux à louer près de Rennes, les espaces de
@@ -145,4 +157,3 @@ export function BlogIndexPage() {
     </main>
   );
 }
-

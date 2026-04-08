@@ -169,6 +169,15 @@ export function HomePage() {
       description: siteConfig.seo.defaultDescription,
       keywords: ['location de bureaux à Rennes', 'bureaux à louer près de Rennes', 'bureaux privatifs près de Rennes'],
     });
+
+    applyJsonLd('website', {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: siteConfig.brand,
+      url: siteConfig.siteUrl,
+      inLanguage: 'fr-FR',
+      description: siteConfig.seo.defaultDescription,
+    });
   }, []);
 
   useEffect(() => {
@@ -1445,11 +1454,11 @@ export function HomePage() {
               >
                 <div className="absolute left-0 top-1/2 hidden h-72 w-px -translate-y-1/2 bg-gray-200 lg:block" />
                 <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-                  <div className="shrink-0 overflow-hidden rounded-full bg-[#ececec] md:mt-2 md:self-start">
+                  <div className="shrink-0 overflow-hidden rounded-3xl bg-[#ececec] md:mt-2 md:self-start">
                     <OptimizedImage
                       src="/marika.jpg"
                       alt="Portrait de Marika"
-                      className="h-36 w-36 object-cover md:h-44 md:w-44"
+                      className="aspect-square h-36 w-36 object-cover md:h-44 md:w-44"
                     />
                   </div>
 
