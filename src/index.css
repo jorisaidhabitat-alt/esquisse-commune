@@ -178,6 +178,63 @@ details[open] > .mobile-accordion-content {
   border-radius: 999px;
 }
 
+.blog-prose {
+  color: #374151;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.blog-prose > * + * {
+  margin-top: 1.5rem;
+}
+
+.blog-prose h2,
+.blog-prose h3,
+.blog-prose h4 {
+  color: #111827;
+  font-family: "Playfair Display", ui-serif, Georgia, serif;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.blog-prose h2 {
+  margin-top: 3rem;
+  font-size: clamp(1.75rem, 2vw, 2.35rem);
+}
+
+.blog-prose h3 {
+  margin-top: 2.4rem;
+  font-size: clamp(1.45rem, 1.8vw, 1.85rem);
+}
+
+.blog-prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  padding-left: 1.35rem;
+}
+
+.blog-prose li + li {
+  margin-top: 0.55rem;
+}
+
+.blog-prose img {
+  display: block;
+  width: 100%;
+  border-radius: 1.75rem;
+}
+
+.blog-prose blockquote {
+  margin-inline: 0;
+  border-left: 4px solid rgba(0, 56, 123, 0.18);
+  padding-left: 1.25rem;
+  color: #4b5563;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shared-marquee-left,
   .shared-marquee-right {

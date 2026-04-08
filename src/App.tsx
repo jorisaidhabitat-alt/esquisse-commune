@@ -4,6 +4,8 @@ import {ScrollToTop} from './components/ScrollToTop';
 import {SiteFooter} from './components/SiteFooter';
 import {SiteHeader} from './components/SiteHeader';
 import {HomePage} from './pages/HomePage';
+import {BlogIndexPage} from './pages/BlogIndexPage';
+import {BlogPostPage} from './pages/BlogPostPage';
 const MentionsLegalesPage = lazy(async () => {
   const module = await import('./pages/LegalPages');
   return {default: module.MentionsLegalesPage};
@@ -27,6 +29,8 @@ export default function App() {
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
           <Route path="/politique-confidentialite" element={<PrivacyPolicyPage />} />
           <Route path="/cgv" element={<CgvPage />} />

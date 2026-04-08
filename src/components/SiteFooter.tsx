@@ -23,6 +23,7 @@ export function SiteFooter() {
               <li><a href="/#bureaux" className="transition-colors hover:text-white">Bureaux privés</a></li>
               <li><a href="/#salles-reunions" className="transition-colors hover:text-white">Salles de réunion</a></li>
               <li><a href="/#espaces-partages" className="transition-colors hover:text-white">Espaces partagés</a></li>
+              <li><Link to="/blog" className="transition-colors hover:text-white">Blog</Link></li>
             </ul>
           </div>
 
