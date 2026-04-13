@@ -12,7 +12,7 @@ export const siteConfig = {
   },
   seo: {
     targetKeyword: 'location de bureaux à Rennes',
-    defaultTitle: "Location de bureaux à Rennes | Bureaux à louer près de Rennes - L'esquisse commune",
+    defaultTitle: "Espace partagé à Chartres de Bretagne - L'esquisse commune",
     defaultDescription: "Vous recherchez une location de bureaux à Rennes ? Découvrez des bureaux privés à louer près de Rennes, à Chartres-de-Bretagne, à 10 minutes de la métropole.",
   },
   legal: {
