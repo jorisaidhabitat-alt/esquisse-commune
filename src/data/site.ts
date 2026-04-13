@@ -1,5 +1,6 @@
 export const siteConfig = {
   brand: "L'esquisse commune",
+  brandAlternates: ["L'esquisse", 'esquisse.aidhabitat.fr'],
   siteUrl: 'https://esquisse.aidhabitat.fr',
   email: 'contact@aidhabitat.fr',
   phoneDisplay: '06 37 94 64 10',
@@ -11,7 +12,7 @@ export const siteConfig = {
   },
   seo: {
     targetKeyword: 'location de bureaux à Rennes',
-    defaultTitle: 'Location de bureaux à Rennes | Bureaux à louer près de Rennes',
+    defaultTitle: "Location de bureaux à Rennes | Bureaux à louer près de Rennes - L'esquisse commune",
     defaultDescription: "Vous recherchez une location de bureaux à Rennes ? Découvrez des bureaux privés à louer près de Rennes, à Chartres-de-Bretagne, à 10 minutes de la métropole.",
   },
   legal: {

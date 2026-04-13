@@ -174,6 +174,7 @@ export function HomePage() {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: siteConfig.brand,
+      alternateName: siteConfig.brandAlternates,
       url: siteConfig.siteUrl,
       inLanguage: 'fr-FR',
       description: siteConfig.seo.defaultDescription,

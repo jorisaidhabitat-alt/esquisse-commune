@@ -1,3 +1,5 @@
+import {siteConfig} from '../data/site';
+
 type SeoInput = {
   title: string;
   description: string;
@@ -35,6 +37,7 @@ export function applySeo({
   document.title = title;
   upsertMeta('meta[name="description"]', {name: 'description', content: description});
   upsertMeta('meta[property="og:title"]', {property: 'og:title', content: ogTitle});
+  upsertMeta('meta[property="og:site_name"]', {property: 'og:site_name', content: siteConfig.brand});
   upsertMeta('meta[property="og:description"]', {property: 'og:description', content: ogDescription});
   upsertMeta('meta[property="og:type"]', {property: 'og:type', content: ogType});
   upsertMeta('meta[property="og:url"]', {property: 'og:url', content: canonicalUrl});
@@ -83,6 +86,7 @@ export function renderSeoTags(
     `<meta name="description" content="${escapeHtml(description)}" />`,
     `<link rel="canonical" href="${canonicalUrl}" />`,
     `<meta property="og:title" content="${escapeHtml(ogTitle)}" />`,
+    `<meta property="og:site_name" content="${escapeHtml(siteConfig.brand)}" />`,
     `<meta property="og:description" content="${escapeHtml(ogDescription)}" />`,
     `<meta property="og:type" content="${escapeHtml(ogType)}" />`,
     `<meta property="og:url" content="${canonicalUrl}" />`,
