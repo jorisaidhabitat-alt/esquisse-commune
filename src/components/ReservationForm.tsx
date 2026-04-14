@@ -1736,10 +1736,10 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
                             {selectedDesk.size} • {selectedDesk.capacity} • {selectedDesk.price} HT • {selectedDesk.orientation}
                           </p>
                           <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                            Charges comprises dans le prix.
+                            Espaces partagés • Salles de réunion
                           </p>
                           <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                            Accès aux espaces partagés.
+                            Charges comprises dans le prix.
                           </p>
                         </div>
                       </div>

@@ -562,13 +562,14 @@ export function HomePage() {
                 <div className="flex flex-1 flex-col p-6 md:p-8">
                   <div className="mb-5">
                     <h3 className="font-serif text-[1.35rem] font-bold text-gray-900 sm:text-2xl">{desk.name}</h3>
-                    <p className="mt-2 text-sm font-medium text-primary/85">Accès aux espaces partagés</p>
                   </div>
                   <div className="mb-7 grid grid-cols-2 gap-x-2 gap-y-4 text-sm text-gray-700">
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Maximize size={16} className="text-primary" /> <span>{desk.size}</span></div>
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Compass size={16} className="text-primary" /> <span>{desk.orientation}</span></div>
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Users size={16} className="text-primary" /> <span>{desk.capacity}</span></div>
-                    <div className="grid grid-cols-[16px_1fr] gap-x-2 pt-3.5">
+                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><CalendarDays size={16} className="text-primary" /> <span>Salle de réunion</span></div>
+                    <div className="grid grid-cols-[16px_1fr] items-start gap-x-2 self-start"><Coffee size={16} className="mt-0.5 text-primary" /> <span>Espaces partagés</span></div>
+                    <div className="grid grid-cols-[16px_1fr] gap-x-2">
                       <Wallet size={16} className="text-primary" />
                       <div>
                         <div>{desk.price}</div>
@@ -1071,9 +1072,9 @@ export function HomePage() {
         <div className="absolute -left-10 bottom-20 hidden h-40 w-40 rotate-12 rounded-3xl bg-white/5 animate-float-delayed md:block" />
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-6 md:px-12">
-          <div className="mb-14 text-center md:mb-20">
-            <h2 className="mb-6 text-center font-serif text-4xl font-black md:text-5xl">Espaces partagés</h2>
-            <p className="max-w-2xl text-base text-white/80 md:mx-auto md:text-lg">
+          <div className="mb-12 text-center md:mb-16 md:text-left">
+            <h2 className="mb-4 font-serif text-4xl font-black md:text-5xl">Espaces partagés</h2>
+            <p className="max-w-2xl text-base text-white/80 md:text-lg">
               Des lieux de vie conçus pour favoriser les échanges, la créativité et la détente entre deux sessions de travail.
             </p>
           </div>

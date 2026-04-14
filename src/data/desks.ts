@@ -24,8 +24,8 @@ export const desks: Desk[] = [
     size: "12,6 m²",
     orientation: "Est",
     capacity: "1 à 3 pers.",
-    price: "620€ / mois",
-    charges: "120€",
+    price: "515€ / mois",
+    charges: "110€",
     available: true
   },
   {
@@ -37,11 +37,11 @@ export const desks: Desk[] = [
       "/desks/bureau-5-1.jpg",
       "/gallery/salon-4.jpg"
     ],
-    size: "13 m²",
+    size: "13,2 m²",
     orientation: "Est",
     capacity: "1 à 3 pers.",
-    price: "650€ / mois",
-    charges: "130€",
+    price: "540€ / mois",
+    charges: "115€",
     available: true
   },
   {
@@ -53,11 +53,11 @@ export const desks: Desk[] = [
       "/desks/bureau-6-2.jpg",
       "/rooms/la-place-1.jpg"
     ],
-    size: "25 m²",
+    size: "25,2 m²",
     orientation: "Nord-Est",
     capacity: "4 à 5 pers.",
-    price: "1250€ / mois",
-    charges: "250€",
+    price: "1035€ / mois",
+    charges: "225€",
     available: true
   }
 ];
