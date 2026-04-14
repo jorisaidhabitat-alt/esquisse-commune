@@ -616,7 +616,7 @@ export function HomePage() {
                                   <span className="text-right">{desk.price} HT</span>
                                 </span>
                                 <span className="mt-2 block text-white/80">
-                                  Comprend le loyer, l’électricité, l’eau, le gaz et internet.
+                                  Comprend l'électricité, l'eau, le chauffage, le rafraîchissement et internet.
                                 </span>
                               </span>
                             </span>
