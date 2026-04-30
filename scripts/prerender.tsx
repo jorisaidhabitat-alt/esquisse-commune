@@ -20,6 +20,35 @@ import {renderJsonLdTags, renderSeoTags} from '../src/lib/seo';
 import {STATIC_SITE_ROUTES} from '../src/lib/site-routes';
 import {listBlogPosts} from '../src/lib/webflow.server';
 
+type StaticSeo = Parameters<typeof renderSeoTags>[0];
+
+const STATIC_ROUTE_SEO: Record<string, StaticSeo> = {
+  '/': {
+    title: "Bureaux à louer à Chartres-de-Bretagne, à 15 min de Rennes — L'esquisse commune",
+    description:
+      'Location de bureaux privés neufs à Chartres-de-Bretagne, proche rocade Sud de Rennes. Bail flexible ou 3/6/9, à partir de 500€/mois. Salles de réunion équipées disponibles. Visite sur rendez-vous au 06 37 94 64 10.',
+    canonicalPath: '/',
+  },
+  '/mentions-legales': {
+    title: "Mentions légales — L'esquisse commune",
+    description:
+      "Mentions légales de L'esquisse commune : éditeur, hébergeur et informations légales du site de location de bureaux à Chartres-de-Bretagne.",
+    canonicalPath: '/mentions-legales',
+  },
+  '/politique-confidentialite': {
+    title: "Politique de confidentialité — L'esquisse commune",
+    description:
+      "Politique de confidentialité de L'esquisse commune : traitement des données personnelles, cookies et droits des utilisateurs sur esquisse.aidhabitat.fr.",
+    canonicalPath: '/politique-confidentialite',
+  },
+  '/cgv': {
+    title: "Conditions générales de vente — L'esquisse commune",
+    description:
+      "Conditions générales de vente et de location des bureaux privés et salles de réunion de L'esquisse commune à Chartres-de-Bretagne.",
+    canonicalPath: '/cgv',
+  },
+};
+
 const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
 
@@ -112,6 +141,26 @@ function renderRoute(routePath: string, data: BlogPageData) {
       </StaticRouter>
     </BlogPageDataProvider>,
   );
+}
+
+function renderStaticRoute(routePath: string) {
+  return renderToString(
+    <BlogPageDataProvider value={null}>
+      <StaticRouter location={routePath}>
+        <App />
+      </StaticRouter>
+    </BlogPageDataProvider>,
+  );
+}
+
+function injectStaticAppHtml(template: string, appHtml: string) {
+  return template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+}
+
+function staticRouteOutputPath(routePath: string) {
+  return routePath === '/'
+    ? path.join(distDir, 'index.html')
+    : path.join(distDir, routePath.replace(/^\//, ''), 'index.html');
 }
 
 async function writeJsonData(posts: Awaited<ReturnType<typeof listBlogPosts>>) {
@@ -225,6 +274,20 @@ async function main() {
   const posts = await listBlogPosts();
 
   await writeJsonData(posts);
+
+  for (const route of STATIC_SITE_ROUTES) {
+    const seo = STATIC_ROUTE_SEO[route.path];
+    if (!seo) {
+      console.warn(`[prerender] no SEO config for ${route.path}, skipping`);
+      continue;
+    }
+
+    const html = injectStaticAppHtml(injectSeo(template, seo), renderStaticRoute(route.path));
+    const outputPath = staticRouteOutputPath(route.path);
+    await fs.mkdir(path.dirname(outputPath), {recursive: true});
+    await fs.writeFile(outputPath, html, 'utf-8');
+    console.log(`[prerender] wrote ${path.relative(rootDir, outputPath)}`);
+  }
 
   const indexData: BlogPageData = {
     kind: 'index',
