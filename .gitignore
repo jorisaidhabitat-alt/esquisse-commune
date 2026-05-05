@@ -9,3 +9,4 @@ coverage/
 .artifacts/
 .npm-cache/
 .playwright-browsers/
+.claude/
