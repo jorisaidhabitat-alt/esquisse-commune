@@ -22,30 +22,36 @@ import {listBlogPosts} from '../src/lib/webflow.server';
 
 type StaticSeo = Parameters<typeof renderSeoTags>[0];
 
+const DEFAULT_OG_IMAGE = new URL('/esquisse-exterieur.jpg', siteConfig.siteUrl).toString();
+
 const STATIC_ROUTE_SEO: Record<string, StaticSeo> = {
   '/': {
     title: "Bureaux à louer à Chartres-de-Bretagne, à 15 min de Rennes — L'esquisse commune",
     description:
       'Location de bureaux privés neufs à Chartres-de-Bretagne, proche rocade Sud de Rennes. Bail flexible ou 3/6/9, à partir de 500€/mois. Salles de réunion équipées disponibles. Visite sur rendez-vous au 06 37 94 64 10.',
     canonicalPath: '/',
+    ogImage: DEFAULT_OG_IMAGE,
   },
   '/mentions-legales': {
     title: "Mentions légales — L'esquisse commune",
     description:
       "Mentions légales de L'esquisse commune : éditeur, hébergeur et informations légales du site de location de bureaux à Chartres-de-Bretagne.",
     canonicalPath: '/mentions-legales',
+    ogImage: DEFAULT_OG_IMAGE,
   },
   '/politique-confidentialite': {
     title: "Politique de confidentialité — L'esquisse commune",
     description:
       "Politique de confidentialité de L'esquisse commune : traitement des données personnelles, cookies et droits des utilisateurs sur esquisse.aidhabitat.fr.",
     canonicalPath: '/politique-confidentialite',
+    ogImage: DEFAULT_OG_IMAGE,
   },
   '/cgv': {
     title: "Conditions générales de vente — L'esquisse commune",
     description:
       "Conditions générales de vente et de location des bureaux privés et salles de réunion de L'esquisse commune à Chartres-de-Bretagne.",
     canonicalPath: '/cgv',
+    ogImage: DEFAULT_OG_IMAGE,
   },
 };
 
