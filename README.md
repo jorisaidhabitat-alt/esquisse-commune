@@ -47,3 +47,4 @@ La commande `npm run build` :
 1. build l'application Vite
 2. récupère les articles Webflow
 3. génère les pages statiques du blog et les fichiers JSON associés dans `dist/blog-data`
+
