@@ -1456,7 +1456,7 @@ export function HomePage() {
               >
                 <div className="absolute left-0 top-1/2 hidden h-72 w-px -translate-y-1/2 bg-gray-200 lg:block" />
                 <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-                  <div className="shrink-0 overflow-hidden rounded-3xl bg-[#ececec] md:mt-2 md:self-start">
+                  <div className="shrink-0 overflow-hidden rounded-full md:mt-2 md:self-start">
                     <OptimizedImage
                       src="/marika.jpg"
                       alt="Portrait de Marika"
