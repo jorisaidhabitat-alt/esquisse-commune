@@ -57,7 +57,7 @@ export const LOCAL_TEST_BLOG_POST: BlogPost = {
   slug: 'article-test-local',
   title: 'Article de test local',
   displayTitle: 'Article de test local pour le blog',
-  author: 'L’esquisse commune',
+  author: 'Marika',
   excerpt:
     'Un article toujours disponible en local pour vérifier la mise en forme, les CTA et la structure SEO du blog sans dépendre du CMS Webflow.',
   coverImage: '/rooms/la-place-2.webp',
@@ -78,7 +78,8 @@ export const LOCAL_TEST_BLOG_POST: BlogPost = {
 export const LOCAL_TEST_BLOG_SUMMARY = toBlogPostSummary(LOCAL_TEST_BLOG_POST);
 
 export function shouldUseLocalBlogFallback() {
-  return import.meta.env.DEV;
+  if (typeof window === 'undefined') return false;
+  return import.meta.env?.DEV === true;
 }
 
 export function getLocalBlogPosts() {
@@ -166,7 +167,7 @@ function getAbsoluteUrl(path: string) {
 }
 
 function getStructuredAuthor(author?: string) {
-  const authorName = author?.trim() || 'L’esquisse commune';
+  const authorName = author?.trim() || 'Marika';
 
   return {
     '@type': authorName === siteConfig.brand || authorName === 'L’esquisse commune' ? 'Organization' : 'Person',

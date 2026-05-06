@@ -79,7 +79,7 @@ function mapBlogPost(item: any): BlogPost {
     slug: fieldData.slug ?? '',
     title: fieldData.name ?? 'Article',
     displayTitle: fieldData[FIELD_SLUGS.h1] ?? fieldData.name ?? 'Article',
-    author: fieldData[FIELD_SLUGS.author] ?? 'L’esquisse commune',
+    author: fieldData[FIELD_SLUGS.author] ?? 'Marika',
     excerpt: fieldData[FIELD_SLUGS.excerpt] ?? getExcerptFallback(contentHtml),
     contentHtml,
     coverImage: getAssetUrl(fieldData[FIELD_SLUGS.coverImage]),
