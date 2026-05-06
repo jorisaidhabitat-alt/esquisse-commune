@@ -24,6 +24,37 @@ type StaticSeo = Parameters<typeof renderSeoTags>[0];
 
 const DEFAULT_OG_IMAGE = new URL('/esquisse-exterieur.jpg', siteConfig.siteUrl).toString();
 
+const HOME_LOCAL_BUSINESS_JSONLD = [
+  {
+    id: 'home-local-business',
+    data: {
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      '@id': `${siteConfig.siteUrl}/#localbusiness`,
+      name: siteConfig.brand,
+      alternateName: [...siteConfig.brandAlternates],
+      image: DEFAULT_OG_IMAGE,
+      url: `${siteConfig.siteUrl}/`,
+      telephone: `+33${siteConfig.phoneLink.replace(/^0/, '')}`,
+      email: siteConfig.email,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: siteConfig.address.street,
+        postalCode: siteConfig.address.postalCode,
+        addressLocality: siteConfig.address.city,
+        addressCountry: 'FR',
+      },
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: 48.0379,
+        longitude: -1.6927,
+      },
+      areaServed: ['Rennes', 'Rennes Métropole', 'Chartres-de-Bretagne', 'Bretagne'],
+      priceRange: '500€-900€',
+    },
+  },
+];
+
 const STATIC_ROUTE_SEO: Record<string, StaticSeo> = {
   '/': {
     title: "Bureaux à louer à Chartres-de-Bretagne, à 15 min de Rennes — L'esquisse commune",
@@ -288,7 +319,8 @@ async function main() {
       continue;
     }
 
-    const html = injectStaticAppHtml(injectSeo(template, seo), renderStaticRoute(route.path));
+    const jsonLdEntries = route.path === '/' ? HOME_LOCAL_BUSINESS_JSONLD : [];
+    const html = injectStaticAppHtml(injectSeo(template, seo, jsonLdEntries), renderStaticRoute(route.path));
     const outputPath = staticRouteOutputPath(route.path);
     await fs.mkdir(path.dirname(outputPath), {recursive: true});
     await fs.writeFile(outputPath, html, 'utf-8');
