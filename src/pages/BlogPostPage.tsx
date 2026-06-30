@@ -13,6 +13,7 @@ import {
   getReadingTimeMinutes,
   type BlogPost,
 } from '../lib/blog';
+import {BUSINESS_PAGE_PATHS} from '../lib/business-pages';
 import {useBlogPageData} from '../lib/blog-context';
 import {applyJsonLd, applySeo} from '../lib/seo';
 
@@ -116,19 +117,27 @@ export function BlogPostPage() {
           eyebrow: 'Passer à l’action',
           title: 'Réservez votre salle de réunion directement',
           description:
-            'Choisissez la formule adaptée et envoyez votre demande depuis le formulaire de réservation de la page principale.',
-          primaryHref: '/#reservation',
-          primaryLabel: 'Réserver une salle',
+            'Consultez la page dédiée à la salle de réunion puis envoyez votre demande avec le bon format de réservation.',
+          primaryHref: BUSINESS_PAGE_PATHS.rooms,
+          primaryLabel: 'Voir la page salle de réunion',
+          secondaryHref: '/#reservation',
+          secondaryLabel: 'Accéder au formulaire',
           highlights: ['Tarifs clairs', 'Options flexibles', 'Demande rapide'],
+          image: '/rooms/la-place-1.webp',
+          imageAlt: 'Salle La Place',
         }
       : {
           eyebrow: 'Passer à l’action',
           title: 'Demandez une visite de bureau directement',
           description:
-            'Découvrez nos bureaux disponibles et envoyez votre demande depuis le formulaire de réservation de la page principale.',
-          primaryHref: '/#reservation',
-          primaryLabel: 'Demander une visite',
+            'Consultez la page dédiée aux bureaux privés puis envoyez votre demande pour visiter l’espace le plus adapté.',
+          primaryHref: BUSINESS_PAGE_PATHS.desks,
+          primaryLabel: 'Voir la page bureaux privés',
+          secondaryHref: '/#reservation',
+          secondaryLabel: 'Accéder au formulaire',
           highlights: ['Bureaux privatifs', 'Charges comprises', 'Visite sur rendez-vous'],
+          image: '/desks/bureau-6-1.jpg',
+          imageAlt: 'Bureau privé à Chartres-de-Bretagne',
         };
 
   return (
@@ -187,8 +196,8 @@ export function BlogPostPage() {
                 >
                   <div className="relative mx-auto aspect-square w-full max-w-[21rem] overflow-hidden rounded-[1.5rem] bg-white/10">
                     <img
-                      src="/rooms/la-place-1.webp"
-                      alt="Salle La Place"
+                      src={ctaContent.image}
+                      alt={ctaContent.imageAlt}
                       className="h-full w-full object-cover"
                       loading="lazy"
                     />
@@ -210,12 +219,20 @@ export function BlogPostPage() {
                   ))}
                 </div>
                 <div className="mt-6 flex justify-center md:justify-start">
-                  <a
-                    href={ctaContent.primaryHref}
-                    className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-white/90"
-                  >
-                    {ctaContent.primaryLabel}
-                  </a>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <a
+                      href={ctaContent.primaryHref}
+                      className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-primary transition-colors hover:bg-white/90"
+                    >
+                      {ctaContent.primaryLabel}
+                    </a>
+                    <a
+                      href={ctaContent.secondaryHref}
+                      className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                    >
+                      {ctaContent.secondaryLabel}
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -226,8 +243,8 @@ export function BlogPostPage() {
                 >
                   <div className="relative aspect-square w-full max-w-[19.5rem] overflow-hidden rounded-[1.35rem] bg-white/10 md:max-h-[calc(100%-1.5rem)] md:w-auto">
                     <img
-                      src="/rooms/la-place-1.webp"
-                      alt="Salle La Place"
+                      src={ctaContent.image}
+                      alt={ctaContent.imageAlt}
                       className="h-full w-full object-cover"
                       loading="lazy"
                     />

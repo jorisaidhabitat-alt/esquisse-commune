@@ -5,6 +5,7 @@ import React from 'react';
 import {StaticRouter} from 'react-router-dom';
 import App from '../src/App';
 import {siteConfig} from '../src/data/site';
+import {BUSINESS_PAGE_PATHS, BUSINESS_PAGE_SEO, getBusinessPageJsonLd} from '../src/lib/business-pages';
 import {
   getBlogIndexPath,
   getBlogIndexJsonLd,
@@ -84,6 +85,8 @@ const STATIC_ROUTE_SEO: Record<string, StaticSeo> = {
     canonicalPath: '/cgv',
     ogImage: DEFAULT_OG_IMAGE,
   },
+  [BUSINESS_PAGE_PATHS.desks]: BUSINESS_PAGE_SEO.desks,
+  [BUSINESS_PAGE_PATHS.rooms]: BUSINESS_PAGE_SEO.rooms,
 };
 
 const rootDir = process.cwd();
@@ -319,7 +322,14 @@ async function main() {
       continue;
     }
 
-    const jsonLdEntries = route.path === '/' ? HOME_LOCAL_BUSINESS_JSONLD : [];
+    const jsonLdEntries =
+      route.path === '/'
+        ? HOME_LOCAL_BUSINESS_JSONLD
+        : route.path === BUSINESS_PAGE_PATHS.desks
+          ? [...getBusinessPageJsonLd('desks')]
+          : route.path === BUSINESS_PAGE_PATHS.rooms
+            ? [...getBusinessPageJsonLd('rooms')]
+            : [];
     const html = injectStaticAppHtml(injectSeo(template, seo, jsonLdEntries), renderStaticRoute(route.path));
     const outputPath = staticRouteOutputPath(route.path);
     await fs.mkdir(path.dirname(outputPath), {recursive: true});

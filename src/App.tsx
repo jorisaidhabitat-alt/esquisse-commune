@@ -5,6 +5,7 @@ import {SiteHeader} from './components/SiteHeader';
 import {HomePage} from './pages/HomePage';
 import {BlogIndexPage} from './pages/BlogIndexPage';
 import {BlogPostPage} from './pages/BlogPostPage';
+import {DeskRentalPage, MeetingRoomPage} from './pages/BusinessPages';
 import {CgvPage, MentionsLegalesPage, PrivacyPolicyPage} from './pages/LegalPages';
 
 export default function App() {
@@ -14,6 +15,8 @@ export default function App() {
       <SiteHeader />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/bureaux-prives-chartres-de-bretagne" element={<DeskRentalPage />} />
+        <Route path="/salle-reunion-chartres-de-bretagne" element={<MeetingRoomPage />} />
         <Route path="/blog" element={<BlogIndexPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route path="/mentions-legales" element={<MentionsLegalesPage />} />

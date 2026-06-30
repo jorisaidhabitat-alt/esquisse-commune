@@ -1,6 +1,7 @@
 import {Mail, MapPin, Phone} from 'lucide-react';
 import {Link} from 'react-router-dom';
 import {siteConfig} from '../data/site';
+import {BUSINESS_PAGE_PATHS} from '../lib/business-pages';
 
 export function SiteFooter() {
   return (
@@ -20,8 +21,8 @@ export function SiteFooter() {
           <div>
             <h4 className="mb-6 font-bold text-gray-200">Navigation</h4>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><a href="/#bureaux" className="transition-colors hover:text-white">Bureaux privés</a></li>
-              <li><a href="/#salles-reunions" className="transition-colors hover:text-white">Salles de réunion</a></li>
+              <li><Link to={BUSINESS_PAGE_PATHS.desks} className="transition-colors hover:text-white">Bureaux privés</Link></li>
+              <li><Link to={BUSINESS_PAGE_PATHS.rooms} className="transition-colors hover:text-white">Salles de réunion</Link></li>
               <li><a href="/#espaces-partages" className="transition-colors hover:text-white">Espaces partagés</a></li>
               <li><Link to="/blog" className="transition-colors hover:text-white">Blog</Link></li>
             </ul>

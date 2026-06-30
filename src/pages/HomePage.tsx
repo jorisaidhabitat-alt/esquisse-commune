@@ -18,6 +18,7 @@ import {
 import {AnimatePresence, motion} from 'motion/react';
 import type {ComponentType, ImgHTMLAttributes, ReactNode, TouchEvent} from 'react';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {Link} from 'react-router-dom';
 import {desks} from '../data/desks';
 import {galleryData} from '../data/gallery';
 import {rooms} from '../data/rooms';
@@ -25,6 +26,7 @@ import {
   getRoomBookingMode,
   type RoomBookingMode,
 } from '../lib/reservation';
+import {BUSINESS_PAGE_PATHS} from '../lib/business-pages';
 import {siteConfig} from '../data/site';
 import {applyJsonLd, applySeo} from '../lib/seo';
 import type {ReservationPrefill} from '../components/ReservationForm';
@@ -494,6 +496,15 @@ export function HomePage() {
                 Vous recherchez une location de bureaux à Rennes ? Découvrez nos bureaux privés, lumineux et
                 aménageables, implantés à Chartres-de-Bretagne, proche de Rennes.
               </p>
+              <div className="mt-6 flex justify-center">
+                <Link
+                  to={BUSINESS_PAGE_PATHS.desks}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Découvrir la page bureaux privés
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -650,6 +661,15 @@ export function HomePage() {
               Des salles disponibles pour vos réunions, ateliers, formations et rendez-vous clients, dans un
               environnement professionnel et calme.
             </p>
+            <div className="mb-10 flex justify-center md:mb-12">
+              <Link
+                to={BUSINESS_PAGE_PATHS.rooms}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:border-primary/35"
+              >
+                Découvrir la page salle de réunion
+                <ArrowRight size={16} />
+              </Link>
+            </div>
 
             <div className="grid grid-cols-3 gap-2 text-gray-700 md:flex md:flex-row md:flex-wrap md:justify-center md:gap-12">
               <Feature icon={<Wifi size={24} />} label="Fibre haut débit" />
