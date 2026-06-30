@@ -24,6 +24,53 @@ export const BUSINESS_PAGE_SEO = {
   },
 } as const;
 
+export const BUSINESS_PAGE_FAQS = {
+  desks: [
+    {
+      question: 'Les bureaux sont-ils vraiment proches de Rennes ?',
+      answer:
+        'Oui. Le site est situé à Chartres-de-Bretagne, avec un accès rapide à la rocade Sud. C’est un bon compromis pour rester proche de Rennes tout en gagnant en simplicité d’accès et de stationnement.',
+    },
+    {
+      question: 'Les charges sont-elles comprises ?',
+      answer:
+        'Oui. Les prix affichés incluent les charges annoncées sur le site, ainsi que les services communs utiles au quotidien, comme l’accès aux espaces partagés et à la connexion internet.',
+    },
+    {
+      question: 'Peut-on visiter avant de s’engager ?',
+      answer:
+        'Oui. La visite est même recommandée pour choisir la bonne surface, vérifier la luminosité, l’orientation et la circulation selon votre activité.',
+    },
+    {
+      question: 'À qui s’adressent ces bureaux ?',
+      answer:
+        'Ils conviennent à des indépendants, petites équipes, cabinets et entreprises qui ont besoin d’un espace fermé, calme et professionnel, sans isolement total grâce aux espaces communs.',
+    },
+  ],
+  rooms: [
+    {
+      question: 'Peut-on réserver à l’heure ?',
+      answer:
+        'Oui. Les deux salles sont proposées avec une formule horaire, pratique pour un rendez-vous client, une présentation ou un point d’équipe.',
+    },
+    {
+      question: 'La localisation est-elle adaptée si l’on vient de Rennes ?',
+      answer:
+        'Oui. La salle se situe à Chartres-de-Bretagne, à proximité de Rennes Sud, avec un accès plus simple en voiture et un parking gratuit sur place.',
+    },
+    {
+      question: 'Quelle salle choisir entre La Place et L’Annexe ?',
+      answer:
+        'La Place convient bien aux formats ouverts, lumineux et collaboratifs. L’Annexe est plus adaptée à des échanges confidentiels, structurés ou nécessitant davantage d’intimité.',
+    },
+    {
+      question: 'Peut-on prévoir un petit déjeuner ou un déjeuner ?',
+      answer:
+        'Oui. Des options de restauration sont prévues selon la formule retenue, ce qui permet de prolonger une réunion ou de structurer une demi-journée de travail.',
+    },
+  ],
+} as const;
+
 function toAbsoluteUrl(pathname: string) {
   return new URL(pathname, siteConfig.siteUrl).toString();
 }
@@ -46,6 +93,7 @@ export function getBusinessPageJsonLd(key: BusinessPageKey) {
     key === 'desks' ? 'Bureaux privés à Chartres-de-Bretagne' : 'Salle de réunion à Chartres-de-Bretagne';
   const description = BUSINESS_PAGE_SEO[key].description;
   const serviceType = key === 'desks' ? 'Location de bureaux privés' : 'Location de salle de réunion';
+  const faqs = BUSINESS_PAGE_FAQS[key];
 
   return [
     {
@@ -80,6 +128,21 @@ export function getBusinessPageJsonLd(key: BusinessPageKey) {
         url: toAbsoluteUrl(path),
         areaServed: ['Chartres-de-Bretagne', 'Rennes Sud', 'Rennes Métropole'],
         provider: getPublisher(),
+      },
+    },
+    {
+      id: `${key}-faq`,
+      data: {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
       },
     },
   ] as const;

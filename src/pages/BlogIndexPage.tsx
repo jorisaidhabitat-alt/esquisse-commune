@@ -2,6 +2,7 @@ import {ArrowRight} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import {siteConfig} from '../data/site';
+import {BUSINESS_PAGE_PATHS} from '../lib/business-pages';
 import {
   formatBlogDate,
   getBlogIndexDataUrl,
@@ -82,6 +83,44 @@ export function BlogIndexPage() {
             Conseils, actualités et retours d’expérience sur les bureaux à louer près de Rennes, les espaces de
             travail et l’organisation de vos réunions professionnelles.
           </p>
+        </div>
+
+        <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-2">
+          <Link
+            to={BUSINESS_PAGE_PATHS.desks}
+            className="group rounded-[2rem] bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Page commerciale</p>
+            <h2 className="mt-4 font-serif text-3xl font-black leading-tight text-gray-900">
+              Bureaux privés à Chartres-de-Bretagne
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-gray-600">
+              Consultez directement notre page de location de bureaux privés près de Rennes pour voir les surfaces,
+              les capacités et les éléments inclus.
+            </p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+              Voir la page bureaux privés
+              <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
+          </Link>
+
+          <Link
+            to={BUSINESS_PAGE_PATHS.rooms}
+            className="group rounded-[2rem] bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Page commerciale</p>
+            <h2 className="mt-4 font-serif text-3xl font-black leading-tight text-gray-900">
+              Salle de réunion à Chartres-de-Bretagne
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-gray-600">
+              Accédez à notre page dédiée aux salles de réunion pour comparer les formats, les équipements et les
+              options de réservation.
+            </p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+              Voir la page salle de réunion
+              <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
+          </Link>
         </div>
       </section>
 

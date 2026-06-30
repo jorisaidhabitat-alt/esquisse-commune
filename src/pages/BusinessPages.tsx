@@ -5,16 +5,20 @@ import {
   Check,
   Clock3,
   Coffee,
+  ChevronRight,
   Mail,
   MapPin,
   MonitorPlay,
   Phone,
 } from 'lucide-react';
 import {useEffect} from 'react';
+import {Link} from 'react-router-dom';
 import {desks} from '../data/desks';
 import {rooms} from '../data/rooms';
 import {siteConfig} from '../data/site';
 import {
+  BUSINESS_PAGE_FAQS,
+  BUSINESS_PAGE_PATHS,
   BUSINESS_PAGE_SEO,
   getBusinessPageJsonLd,
   type BusinessPageKey,
@@ -45,6 +49,16 @@ function BusinessPageLayout({
     <main className="bg-gray-50">
       <section className="mx-auto max-w-[1400px] px-6 pb-10 pt-16 md:px-12 md:pb-12 md:pt-24">
         <div className="mx-auto max-w-4xl text-center">
+          <nav
+            aria-label="Fil d'Ariane"
+            className="mb-5 flex flex-wrap items-center justify-center gap-2 text-sm text-gray-500"
+          >
+            <Link to="/" className="transition-colors hover:text-primary">
+              Accueil
+            </Link>
+            <ChevronRight size={14} className="text-gray-300" />
+            <span className="text-gray-700">{title}</span>
+          </nav>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">{eyebrow}</p>
           <h1 className="mt-5 font-serif text-4xl font-black leading-tight text-gray-900 md:text-6xl">{title}</h1>
           <p className="mt-6 text-base leading-relaxed text-gray-600 md:text-xl">{description}</p>
@@ -184,10 +198,9 @@ export function DeskRentalPage() {
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <SectionTitle title="Questions fréquentes" />
           <div className="grid gap-6 md:grid-cols-2">
-            <FaqItem question="Les bureaux sont-ils vraiment proches de Rennes ?" answer="Oui. Le site est situé à Chartres-de-Bretagne, avec un accès rapide à la rocade Sud. C’est un bon compromis pour rester proche de Rennes tout en gagnant en simplicité d’accès et de stationnement." />
-            <FaqItem question="Les charges sont-elles comprises ?" answer="Oui. Les prix affichés incluent les charges annoncées sur le site, ainsi que les services communs utiles au quotidien, comme l’accès aux espaces partagés et à la connexion internet." />
-            <FaqItem question="Peut-on visiter avant de s’engager ?" answer="Oui. La visite est même recommandée pour choisir la bonne surface, vérifier la luminosité, l’orientation et la circulation selon votre activité." />
-            <FaqItem question="À qui s’adressent ces bureaux ?" answer="Ils conviennent à des indépendants, petites équipes, cabinets et entreprises qui ont besoin d’un espace fermé, calme et professionnel, sans isolement total grâce aux espaces communs." />
+            {BUSINESS_PAGE_FAQS.desks.map((faq) => (
+              <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
+            ))}
           </div>
         </div>
       </section>
@@ -309,10 +322,9 @@ export function MeetingRoomPage() {
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <SectionTitle title="Questions fréquentes" />
           <div className="grid gap-6 md:grid-cols-2">
-            <FaqItem question="Peut-on réserver à l’heure ?" answer="Oui. Les deux salles sont proposées avec une formule horaire, pratique pour un rendez-vous client, une présentation ou un point d’équipe." />
-            <FaqItem question="La localisation est-elle adaptée si l’on vient de Rennes ?" answer="Oui. La salle se situe à Chartres-de-Bretagne, à proximité de Rennes Sud, avec un accès plus simple en voiture et un parking gratuit sur place." />
-            <FaqItem question="Quelle salle choisir entre La Place et L’Annexe ?" answer="La Place convient bien aux formats ouverts, lumineux et collaboratifs. L’Annexe est plus adaptée à des échanges confidentiels, structurés ou nécessitant davantage d’intimité." />
-            <FaqItem question="Peut-on prévoir un petit déjeuner ou un déjeuner ?" answer="Oui. Des options de restauration sont prévues selon la formule retenue, ce qui permet de prolonger une réunion ou de structurer une demi-journée de travail." />
+            {BUSINESS_PAGE_FAQS.rooms.map((faq) => (
+              <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
+            ))}
           </div>
         </div>
       </section>
