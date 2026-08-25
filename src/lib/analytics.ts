@@ -41,7 +41,10 @@ export function initializeAnalytics() {
   }
 
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = window.gtag ?? ((...args: unknown[]) => window.dataLayer?.push(args));
+  window.gtag = window.gtag ?? function gtag(..._args: unknown[]) {
+    // gtag.js expects each queued command as the native arguments object.
+    window.dataLayer?.push(arguments);
+  };
 
   if (!document.querySelector(`script[data-ga-measurement-id="${measurementId}"]`)) {
     const script = document.createElement('script');
