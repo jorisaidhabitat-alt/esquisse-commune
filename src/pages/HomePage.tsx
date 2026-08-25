@@ -12,7 +12,6 @@ import {
   Maximize,
   MonitorPlay,
   Users,
-  Wallet,
   Wifi,
 } from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
@@ -132,8 +131,6 @@ export function HomePage() {
   const [isSharedSpacesDesktop, setIsSharedSpacesDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 768 : false,
   );
-  const [hasPointerHover, setHasPointerHover] = useState(false);
-  const [openDeskChargesInfo, setOpenDeskChargesInfo] = useState<string | null>(null);
   const [openRoomHighlight, setOpenRoomHighlight] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<ReservationPrefill>(null);
   const [shouldLoadReservationForm, setShouldLoadReservationForm] = useState(false);
@@ -143,8 +140,6 @@ export function HomePage() {
   const deskTouchStartX = useRef<Record<string, number>>({});
   const deskTouchStartY = useRef<Record<string, number>>({});
   const reservationSectionRef = useRef<HTMLElement | null>(null);
-
-  const getDeskAmount = (value: string) => Number(value.replace(/[^\d]/g, '')) || 0;
 
   useEffect(() => {
     applySeo({
@@ -203,23 +198,6 @@ export function HomePage() {
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
-    const syncPointerHover = (event?: MediaQueryListEvent) => {
-      const nextValue = event ? event.matches : mediaQuery.matches;
-      setHasPointerHover(nextValue);
-
-      if (nextValue) {
-        setOpenDeskChargesInfo(null);
-      }
-    };
-
-    syncPointerHover();
-    mediaQuery.addEventListener('change', syncPointerHover);
-
-    return () => mediaQuery.removeEventListener('change', syncPointerHover);
   }, []);
 
   useEffect(() => {
@@ -367,12 +345,10 @@ export function HomePage() {
                 whileInView={{opacity: 1, y: 0}}
                 viewport={{once: true}}
                 transition={{duration: 0.6}}
-                className="relative inline-block font-serif text-[2.15rem] font-black leading-[1.15] tracking-tight text-gray-900 sm:text-5xl md:text-6xl"
+                className="relative inline-block font-serif text-[2rem] font-black leading-[1.15] tracking-tight text-gray-900 sm:text-4xl md:text-[3.35rem]"
               >
-                Un espace de travail
-                <br />
                 <span className="relative inline-block">
-                  partagé et vivant
+                  Bureaux privatifs à Chartres-de-Bretagne
                   <svg
                     className="absolute -bottom-2 left-0 h-3 w-full text-primary"
                     viewBox="0 0 100 20"
@@ -391,13 +367,16 @@ export function HomePage() {
                     />
                   </svg>
                 </span>
-                <span className="absolute -right-2 -top-1 font-serif text-2xl text-primary sm:-right-4 sm:text-3xl">’</span>
               </motion.h1>
 
-              <p className="mt-5 max-w-md text-sm font-medium leading-relaxed text-gray-600 md:mt-6 md:text-base">
-                Vous recherchez une location de bureaux à Rennes ? Découvrez nos bureaux privés à louer
-                à Chartres-de-Bretagne, à environ 10 minutes de Rennes, avec un cadre professionnel clair,
-                parking, accès rapide et services sur place.
+              <p className="mt-5 flex max-w-xl flex-wrap gap-x-3 gap-y-2 text-sm font-semibold leading-relaxed text-gray-600 md:mt-6 md:text-base">
+                <span>Parking gratuit</span>
+                <span className="text-primary/50">•</span>
+                <span>Fibre</span>
+                <span className="text-primary/50">•</span>
+                <span>Espaces partagés</span>
+                <span className="text-primary/50">•</span>
+                <span>À 10 min de Rennes</span>
               </p>
             </div>
 
@@ -496,6 +475,9 @@ export function HomePage() {
                 Vous recherchez une location de bureaux à Rennes ? Découvrez nos bureaux privés, lumineux et
                 aménageables, implantés à Chartres-de-Bretagne, proche de Rennes.
               </p>
+              <p className="mt-4 text-sm font-medium leading-relaxed text-white/75 md:text-base">
+                Votre bureau privatif, complété par une cuisine, un espace pause, des phone box, des salles de réunion et du stationnement.
+              </p>
               <div className="mt-6 flex justify-center">
                 <Link
                   to={BUSINESS_PAGE_PATHS.desks}
@@ -574,68 +556,21 @@ export function HomePage() {
                   <div className="mb-5">
                     <h3 className="font-serif text-[1.35rem] font-bold text-gray-900 sm:text-2xl">{desk.name}</h3>
                   </div>
-                  <div className="mb-7 grid grid-cols-2 gap-x-2 gap-y-4 text-sm text-gray-700">
+                  <div className="mb-6 rounded-2xl bg-primary/5 p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Budget mensuel</p>
+                    <p className="mt-1 text-3xl font-black tracking-tight text-gray-900">{desk.price}</p>
+                    <p className="mt-1 text-sm font-semibold text-primary">Tout compris</p>
+                  </div>
+                  <div className="mb-5 grid grid-cols-2 gap-x-2 gap-y-4 text-sm text-gray-700">
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Maximize size={16} className="text-primary" /> <span>{desk.size}</span></div>
                     <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Compass size={16} className="text-primary" /> <span>{desk.orientation}</span></div>
-                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><Users size={16} className="text-primary" /> <span>{desk.capacity}</span></div>
-                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><CalendarDays size={16} className="text-primary" /> <span>Salle de réunion</span></div>
+                    <div className="col-span-2 grid grid-cols-[16px_1fr] items-start gap-x-2"><Users size={16} className="mt-0.5 text-primary" /> <span>{desk.capacity}</span></div>
+                    <div className="grid grid-cols-[16px_1fr] items-center gap-x-2"><CalendarDays size={16} className="text-primary" /> <span>Accès aux salles de réunion</span></div>
                     <div className="grid grid-cols-[16px_1fr] items-start gap-x-2 self-start"><Coffee size={16} className="mt-0.5 text-primary" /> <span>Espaces partagés</span></div>
-                    <div className="grid grid-cols-[16px_1fr] gap-x-2">
-                      <Wallet size={16} className="text-primary" />
-                      <div>
-                        <div>{desk.price}</div>
-                        <div className="pt-1 text-xs font-medium text-gray-500">
-                          <span className="group/info relative inline-flex items-center gap-1.5">
-                            <span>Charges comprises</span>
-                            <span className="relative inline-flex">
-                              <button
-                                type="button"
-                                aria-label="Voir le détail des charges comprises"
-                                aria-expanded={openDeskChargesInfo === desk.id}
-                                onClick={() => {
-                                  if (hasPointerHover) {
-                                    return;
-                                  }
-
-                                  setOpenDeskChargesInfo((current) => current === desk.id ? null : desk.id);
-                                }}
-                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-gray-500"
-                              >
-                                <Info size={13} />
-                              </button>
-                              <span className={`absolute bottom-[calc(100%+0.5rem)] right-0 z-20 w-[min(16rem,calc(100vw-4rem))] rounded-xl bg-gray-900 px-3 py-3 text-[11px] font-medium leading-relaxed text-white shadow-xl transition-opacity duration-200 sm:left-1/2 sm:right-auto sm:w-64 sm:-translate-x-1/2 ${
-                                hasPointerHover
-                                  ? 'pointer-events-none opacity-0 group-hover/info:opacity-100'
-                                  : openDeskChargesInfo === desk.id
-                                    ? 'opacity-100'
-                                    : 'pointer-events-none opacity-0'
-                              }`}>
-                                <span className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2">
-                                  <span>Loyer</span>
-                                  <span className="overflow-hidden text-white/55">................................</span>
-                                  <span className="text-right">{getDeskAmount(desk.price) - getDeskAmount(desk.charges)}€ / mois HT</span>
-                                </span>
-                                <span className="mt-1 grid grid-cols-[auto_1fr_auto] items-center gap-x-2">
-                                  <span>Charges</span>
-                                  <span className="overflow-hidden text-white/55">................................</span>
-                                  <span className="text-right">{desk.charges} / mois HT</span>
-                                </span>
-                                <span className="mt-2 block border-t border-white/15" />
-                                <span className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-x-2 font-semibold">
-                                  <span>Total</span>
-                                  <span className="overflow-hidden text-white/55">................................</span>
-                                  <span className="text-right">{desk.price} HT</span>
-                                </span>
-                                <span className="mt-2 block text-white/80">
-                                  Comprend l'électricité, l'eau, le chauffage, le rafraîchissement et internet.
-                                </span>
-                              </span>
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
+                  <p className="mb-7 text-xs leading-relaxed text-gray-500">
+                    Électricité, chauffage, rafraîchissement, fibre, eau, parking et espaces communs inclus.
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
@@ -644,7 +579,7 @@ export function HomePage() {
                     }}
                     className="mt-auto rounded-xl border border-primary/20 bg-white px-4 py-3 text-center text-sm font-bold text-primary transition-colors hover:border-primary hover:bg-primary hover:text-white"
                   >
-                    Visiter le bureau
+                    Choisir un créneau de visite
                   </button>
                 </div>
               </article>

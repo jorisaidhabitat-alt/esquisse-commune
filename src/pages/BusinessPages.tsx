@@ -121,7 +121,7 @@ export function DeskRentalPage() {
       pageKey="desks"
       eyebrow="Bureaux privés"
       title="Bureaux privés à Chartres-de-Bretagne"
-      description="Des bureaux privés lumineux, disponibles immédiatement à Chartres-de-Bretagne, à environ 10 minutes de Rennes. Charges comprises, parking gratuit, espaces partagés et visite sur rendez-vous."
+      description="Bureaux privatifs à Chartres-de-Bretagne dès 390 € HT/mois, tout compris. Parking gratuit, fibre, espaces partagés et accès rapide à Rennes."
       primaryLabel="Demander une visite"
     >
       <section className="pb-12">
@@ -134,21 +134,25 @@ export function DeskRentalPage() {
                 </div>
                 <div className="p-6 md:p-7">
                   <h2 className="font-serif text-3xl font-black text-gray-900">{desk.name}</h2>
-                  <p className="mt-2 text-sm font-medium text-primary">Bureau privé avec accès aux espaces partagés</p>
+                  <p className="mt-2 text-sm font-medium text-primary">Bureau privé + espaces communs à votre disposition</p>
+                  <div className="mt-6 rounded-[1.25rem] bg-primary/5 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Budget mensuel</p>
+                    <p className="mt-2 text-3xl font-black text-gray-900">{desk.price}</p>
+                    <p className="mt-1 text-sm font-semibold text-primary">Tout compris</p>
+                  </div>
                   <div className="mt-6 grid grid-cols-2 gap-4 text-sm text-gray-600">
                     <Metric label="Superficie" value={desk.size} />
                     <Metric label="Orientation" value={desk.orientation} />
                     <Metric label="Capacité" value={desk.capacity} />
-                    <Metric label="Prix" value={desk.price} />
                   </div>
                   <p className="mt-5 text-sm leading-relaxed text-gray-500">
-                    Charges comprises : eau, électricité, chauffage, internet et accès aux espaces partagés.
+                    Électricité, chauffage, rafraîchissement, fibre, eau, parking et espaces communs inclus.
                   </p>
                   <a
                     href="/#reservation"
                     className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary"
                   >
-                    Demander une visite
+                    Choisir un créneau de visite
                     <ArrowRight size={16} />
                   </a>
                 </div>
@@ -161,8 +165,8 @@ export function DeskRentalPage() {
       <section className="pb-12 pt-10 md:pb-16">
         <div className="mx-auto max-w-[1400px] px-6 md:px-12">
           <SectionTitle
-            title="Pourquoi louer vos bureaux ici"
-            description="Le lieu a été pensé pour des indépendants, équipes projet et petites structures qui cherchent un cadre clair, professionnel et accessible sans les contraintes du centre-ville."
+            title="Plus qu’un bureau privatif"
+            description="Votre surface privative est complétée par une cuisine, un espace pause, des phone box, des salles de réunion et du stationnement : un lieu de travail plus vaste que les seuls mètres carrés de votre bureau."
           />
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <FeatureCard icon={<Car className="text-primary" size={22} />} title="Parking gratuit" description="Un accès simple pour vous, vos collaborateurs et vos clients, sans stress de stationnement." />

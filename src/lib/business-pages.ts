@@ -11,7 +11,7 @@ export const BUSINESS_PAGE_SEO = {
   desks: {
     title: "Bureaux privés à Chartres-de-Bretagne | Location de bureaux près de Rennes",
     description:
-      "Découvrez nos bureaux privés à Chartres-de-Bretagne, à 10 minutes de Rennes. Espaces lumineux, charges comprises, parking gratuit et visite sur rendez-vous.",
+      "Bureaux privatifs à Chartres-de-Bretagne dès 390 € HT/mois, tout compris. Espaces lumineux, parking gratuit, fibre et visite sur rendez-vous.",
     canonicalPath: BUSINESS_PAGE_PATHS.desks,
     ogImage: new URL('/desks/bureau-6-1.jpg', siteConfig.siteUrl).toString(),
   },
@@ -32,9 +32,9 @@ export const BUSINESS_PAGE_FAQS = {
         'Oui. Le site est situé à Chartres-de-Bretagne, avec un accès rapide à la rocade Sud. C’est un bon compromis pour rester proche de Rennes tout en gagnant en simplicité d’accès et de stationnement.',
     },
     {
-      question: 'Les charges sont-elles comprises ?',
+      question: 'Que comprend le prix affiché ?',
       answer:
-        'Oui. Les prix affichés incluent les charges annoncées sur le site, ainsi que les services communs utiles au quotidien, comme l’accès aux espaces partagés et à la connexion internet.',
+        'Le budget mensuel inclut l’électricité, l’eau, le chauffage, le rafraîchissement, la fibre, le parking et l’accès aux espaces communs utiles au quotidien.',
     },
     {
       question: 'Peut-on visiter avant de s’engager ?',

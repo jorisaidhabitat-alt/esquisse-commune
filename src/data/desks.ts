@@ -7,7 +7,6 @@ export interface Desk {
   orientation: string;
   capacity: string;
   price: string;
-  charges: string;
   available: boolean;
 }
 
@@ -23,9 +22,8 @@ export const desks: Desk[] = [
     ],
     size: "12,6 m²",
     orientation: "Est",
-    capacity: "1 à 3 pers.",
-    price: "515€ / mois",
-    charges: "110€",
+    capacity: "Idéal 1 à 2 personnes · jusqu’à 3 postes",
+    price: "390 € HT/mois",
     available: true
   },
   {
@@ -39,9 +37,8 @@ export const desks: Desk[] = [
     ],
     size: "13,2 m²",
     orientation: "Est",
-    capacity: "1 à 3 pers.",
-    price: "540€ / mois",
-    charges: "115€",
+    capacity: "Idéal 1 à 2 personnes · jusqu’à 3 postes",
+    price: "420 € HT/mois",
     available: true
   },
   {
@@ -55,9 +52,8 @@ export const desks: Desk[] = [
     ],
     size: "25,2 m²",
     orientation: "Nord-Est",
-    capacity: "4 à 5 pers.",
-    price: "1035€ / mois",
-    charges: "225€",
+    capacity: "Idéal pour une équipe de 3 à 4 personnes · jusqu’à 5 postes",
+    price: "790 € HT/mois",
     available: true
   }
 ];
