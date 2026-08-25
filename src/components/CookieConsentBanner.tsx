@@ -9,9 +9,13 @@ export function openCookiePreferences() {
 }
 
 export function CookieConsentBanner() {
-  const [isOpen, setIsOpen] = useState(() => getAnalyticsConsent() === null);
+  // The server cannot read localStorage. Waiting for hydration avoids rendering a
+  // different banner tree on the server and in a returning visitor's browser.
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    setIsOpen(getAnalyticsConsent() === null);
+
     const openBanner = () => setIsOpen(true);
     window.addEventListener(COOKIE_PREFERENCES_EVENT, openBanner);
     return () => window.removeEventListener(COOKIE_PREFERENCES_EVENT, openBanner);
