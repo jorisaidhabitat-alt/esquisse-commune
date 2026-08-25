@@ -1,5 +1,6 @@
 import {Route, Routes} from 'react-router-dom';
 import {ScrollToTop} from './components/ScrollToTop';
+import {AnalyticsTracker} from './components/AnalyticsTracker';
 import {SiteFooter} from './components/SiteFooter';
 import {SiteHeader} from './components/SiteHeader';
 import {HomePage} from './pages/HomePage';
@@ -11,6 +12,7 @@ import {CgvPage, MentionsLegalesPage, PrivacyPolicyPage} from './pages/LegalPage
 export default function App() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-primary selection:text-white">
+      <AnalyticsTracker />
       <ScrollToTop />
       <SiteHeader />
       <Routes>

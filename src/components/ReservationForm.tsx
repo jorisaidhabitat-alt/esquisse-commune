@@ -22,6 +22,7 @@ import {fr} from 'date-fns/locale';
 import {desks} from '../data/desks';
 import {rooms} from '../data/rooms';
 import {siteConfig} from '../data/site';
+import {trackEvent} from '../lib/analytics';
 import {
   getAvailableRoomOptions,
   getRoomBookingMode,
@@ -163,6 +164,10 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
   const previousStepRef = useRef(formStep);
   const previousMobileContactStepRef = useRef(showMobileRoomContactStep);
   const hasMountedRef = useRef(false);
+
+  useEffect(() => {
+    trackEvent('view_reservation_form');
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -443,6 +448,8 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       return;
     }
 
+    trackEvent('select_reservation_type', {reservation_type: type});
+
     setReservationType(type);
     setSelectedDeskId(null);
     setSelectedRoomId(null);
@@ -501,6 +508,12 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
 
     if (isLocalPreview) {
       window.setTimeout(() => {
+        trackEvent('generate_lead', {
+          lead_type: reservationType,
+          offer_name: selectedOfferLabel,
+          booking_mode: roomBookingMode ?? 'visit',
+          currency: 'EUR',
+        });
         setSubmitState({
           status: 'success',
           message: 'Votre demande a bien été envoyée.',
@@ -567,6 +580,13 @@ export function ReservationForm({prefill}: {prefill: ReservationPrefill}) {
       setSubmitState({
         status: 'success',
         message: result.message ?? 'Votre demande a bien été envoyée.',
+      });
+      trackEvent('generate_lead', {
+        lead_type: reservationType,
+        offer_name: selectedOfferLabel,
+        booking_mode: roomBookingMode ?? 'visit',
+        currency: 'EUR',
+        value: reservationType === 'salle' ? selectedRoomTotalTtc : undefined,
       });
     } catch {
       setSubmitState({
