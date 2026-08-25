@@ -1,5 +1,9 @@
 type AnalyticsParameters = Record<string, string | number | boolean | undefined>;
 
+export const ANALYTICS_CONSENT_STORAGE_KEY = 'esquisse-analytics-consent';
+export const ANALYTICS_CONSENT_CHANGE_EVENT = 'esquisse-analytics-consent-change';
+type AnalyticsConsent = 'granted' | 'denied';
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -12,6 +16,23 @@ const measurementId = import.meta.env?.VITE_GA_MEASUREMENT_ID?.trim();
 
 export function isAnalyticsEnabled() {
   return Boolean(measurementId);
+}
+
+export function getAnalyticsConsent(): AnalyticsConsent | null {
+  if (typeof window === 'undefined') return null;
+
+  const value = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+  return value === 'granted' || value === 'denied' ? value : null;
+}
+
+export function setAnalyticsConsent(consent: AnalyticsConsent) {
+  if (typeof window === 'undefined') return;
+
+  window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, consent);
+  if (consent === 'denied' && window.gtag) {
+    window.gtag('consent', 'update', {analytics_storage: 'denied'});
+  }
+  window.dispatchEvent(new Event(ANALYTICS_CONSENT_CHANGE_EVENT));
 }
 
 export function initializeAnalytics() {
@@ -31,6 +52,7 @@ export function initializeAnalytics() {
   }
 
   window.gtag('js', new Date());
+  window.gtag('consent', 'default', {analytics_storage: 'granted'});
   window.gtag('config', measurementId, {anonymize_ip: true, send_page_view: false});
 }
 

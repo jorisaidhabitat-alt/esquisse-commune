@@ -1,6 +1,7 @@
 import {Route, Routes} from 'react-router-dom';
 import {ScrollToTop} from './components/ScrollToTop';
 import {AnalyticsTracker} from './components/AnalyticsTracker';
+import {CookieConsentBanner} from './components/CookieConsentBanner';
 import {SiteFooter} from './components/SiteFooter';
 import {SiteHeader} from './components/SiteHeader';
 import {HomePage} from './pages/HomePage';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/cgv" element={<CgvPage />} />
       </Routes>
       <SiteFooter />
+      <CookieConsentBanner />
     </div>
   );
 }

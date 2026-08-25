@@ -111,8 +111,8 @@ export function PrivacyPolicyPage() {
 
       <Section title="Cookies">
         <p>
-          Le site ne déploie pas à ce stade de bannière cookie dédiée ni d’outil marketing configuré.
-          Si des outils d’analyse, de paiement ou de suivi sont ajoutés ultérieurement, cette politique devra être mise à jour.
+          Sous réserve de votre accord, le site utilise Google Analytics 4 pour mesurer la fréquentation et améliorer le parcours de réservation.
+          Aucun traceur de mesure d’audience n’est chargé avant votre choix. Vous pouvez accepter, refuser ou modifier votre choix à tout moment via le lien « Gérer mes cookies » présent dans le pied de page.
         </p>
       </Section>
     </LegalPageLayout>

@@ -1,16 +1,28 @@
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom';
-import {initializeAnalytics, isAnalyticsEnabled, trackEvent, trackPageView} from '../lib/analytics';
+import {
+  ANALYTICS_CONSENT_CHANGE_EVENT,
+  getAnalyticsConsent,
+  initializeAnalytics,
+  isAnalyticsEnabled,
+  trackEvent,
+  trackPageView,
+} from '../lib/analytics';
 
 export function AnalyticsTracker() {
   const location = useLocation();
+  const [hasConsent, setHasConsent] = useState(() => getAnalyticsConsent() === 'granted');
 
   useEffect(() => {
-    initializeAnalytics();
+    const syncConsent = () => setHasConsent(getAnalyticsConsent() === 'granted');
+    window.addEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
+    return () => window.removeEventListener(ANALYTICS_CONSENT_CHANGE_EVENT, syncConsent);
   }, []);
 
   useEffect(() => {
-    if (!isAnalyticsEnabled()) return;
+    if (!hasConsent || !isAnalyticsEnabled()) return;
+
+    initializeAnalytics();
 
     const pagePath = `${location.pathname}${location.search}${location.hash}`;
     trackPageView(pagePath);
@@ -22,10 +34,10 @@ export function AnalyticsTracker() {
     } else if (location.pathname.startsWith('/blog/')) {
       trackEvent('view_blog_post', {article_slug: location.pathname.replace('/blog/', '')});
     }
-  }, [location.hash, location.pathname, location.search]);
+  }, [hasConsent, location.hash, location.pathname, location.search]);
 
   useEffect(() => {
-    if (!isAnalyticsEnabled()) return;
+    if (!hasConsent || !isAnalyticsEnabled()) return;
 
     const handleClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
@@ -45,7 +57,7 @@ export function AnalyticsTracker() {
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, []);
+  }, [hasConsent]);
 
   return null;
 }

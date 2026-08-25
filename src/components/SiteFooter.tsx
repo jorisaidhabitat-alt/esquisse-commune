@@ -2,6 +2,7 @@ import {Mail, MapPin, Phone} from 'lucide-react';
 import {Link} from 'react-router-dom';
 import {siteConfig} from '../data/site';
 import {BUSINESS_PAGE_PATHS} from '../lib/business-pages';
+import {openCookiePreferences} from './CookieConsentBanner';
 
 export function SiteFooter() {
   return (
@@ -68,6 +69,7 @@ export function SiteFooter() {
           <div className="flex flex-wrap justify-center gap-4 md:justify-end md:gap-6">
             <Link to="/mentions-legales" className="transition-colors hover:text-white">Mentions légales</Link>
             <Link to="/politique-confidentialite" className="transition-colors hover:text-white">Confidentialité</Link>
+            <button type="button" onClick={openCookiePreferences} className="transition-colors hover:text-white">Gérer mes cookies</button>
             <Link to="/cgv" className="transition-colors hover:text-white">CGV</Link>
           </div>
         </div>
